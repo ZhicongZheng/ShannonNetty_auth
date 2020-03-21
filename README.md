@@ -44,12 +44,12 @@ public class HeartBeatSimpleHandle extends SimpleChannelInboundHandler<CustomPro
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, CustomProtocol customProtocol) throws Exception {
-        LOGGER.info("收到customProtocol={}", customProtocol);
+    protected void channelRead0(ChannelHandlerContext ctx, CustomProtocol socketMsg) throws Exception {
+        LOGGER.info("收到customProtocol={}", socketMsg);
         //我们调用writeAndFlush（Object）来逐字写入接收到的消息并刷新线路
-        //ctx.writeAndFlush(customProtocol);
+        //ctx.writeAndFlush(socketMsg);
         //保存客户端与 Channel 之间的关系
-        NettySocketHolder.put(customProtocol.getId(), (NioSocketChannel) ctx.channel());
+        NettySocketHolder.put(socketMsg.getId(), (NioSocketChannel) ctx.channel());
     }
 }
 
@@ -173,10 +173,10 @@ public class HeartbeatDecoder extends ByteToMessageDecoder {
         byte[] bytes = new byte[byteBuf.readableBytes()];
         byteBuf.readBytes(bytes);
         String content = new String(bytes);
-        CustomProtocol customProtocol = new CustomProtocol();
-        customProtocol.setId(id);
-        customProtocol.setContent(content);
-        list.add(customProtocol);
+        CustomProtocol socketMsg = new CustomProtocol();
+        socketMsg.setId(id);
+        socketMsg.setContent(content);
+        list.add(socketMsg);
     }
 }
 ```
@@ -347,9 +347,9 @@ public class CustomerHandleInitializer extends ChannelInitializer<Channel> {
 ```java
 public class HeartbeatEncode extends MessageToByteEncoder<CustomProtocol> {
     @Override
-    protected void encode(ChannelHandlerContext channelHandlerContext, CustomProtocol customProtocol, ByteBuf byteBuf) throws Exception {
-        byteBuf.writeLong(customProtocol.getId()) ;
-        byteBuf.writeBytes(customProtocol.getContent().getBytes()) ;
+    protected void encode(ChannelHandlerContext channelHandlerContext, CustomProtocol socketMsg, ByteBuf byteBuf) throws Exception {
+        byteBuf.writeLong(socketMsg.getId()) ;
+        byteBuf.writeBytes(socketMsg.getContent().getBytes()) ;
     }
 }
 ```
