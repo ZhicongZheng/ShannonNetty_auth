@@ -14,6 +14,7 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.security.KeyPair;
 
@@ -21,6 +22,7 @@ import java.security.KeyPair;
  * Socket服务器事件处理器
  */
 @Slf4j
+@Component
 public class ShannonHeartServerHandler extends SimpleChannelInboundHandler<SocketMsg> {
 
     private static final ByteBuf HEART_BEAT = Unpooled.unreleasableBuffer(
