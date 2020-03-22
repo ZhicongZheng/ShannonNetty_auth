@@ -1,6 +1,6 @@
 package com.shannon.client.tcpclient;
 
-import com.shannon.client.init.ShannonChannelInitializer;
+import com.shannon.client.initializer.ClientChannelInit;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -37,7 +37,7 @@ public class ShannonNettyClient {
         //NioSocketChannel用于创建客户端通道，而不是NioServerSocketChannel。
         bootstrap.group(group)
                 .channel(NioSocketChannel.class)
-                .handler(new ShannonChannelInitializer())
+                .handler(new ClientChannelInit())
                 .remoteAddress(host,nettyPort)
                 .option(ChannelOption.SO_KEEPALIVE, true)
                 .option(ChannelOption.TCP_NODELAY, true);

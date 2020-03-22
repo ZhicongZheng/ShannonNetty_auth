@@ -1,6 +1,5 @@
 package com.shannon.common.model;
 
-import com.shannon.common.enums.MsgType;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -16,7 +15,7 @@ public class SocketMsg implements Serializable {
 
     private static final long serialVersionUID = 290429819350651974L;
     private long id;
-    private MsgType type;
+    private int type;
     private String content;
 
 

@@ -23,17 +23,18 @@ import java.security.KeyPair;
  */
 @Slf4j
 @Component
-public class ShannonHeartServerHandler extends SimpleChannelInboundHandler<SocketMsg> {
+public class ShannonHeartServerHandler extends SimpleChannelInboundHandler<String> {
 
-    private static final ByteBuf HEART_BEAT = Unpooled.unreleasableBuffer(
-            Unpooled.copiedBuffer(new SocketMsg().setId(1).setType(MsgType.HEART_BEAT).setContent("pong").toString(), CharsetUtil.UTF_8));
+    private static final ByteBuf PONG = Unpooled.unreleasableBuffer(
+            Unpooled.copiedBuffer(new SocketMsg().setId(1).setType(MsgType.PONG_VALUE).setContent("pong").toString()
+                    +System.getProperty("line.separator"), CharsetUtil.UTF_8));
 
     /**
      * 取消绑定
      */
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
-        log.info("{} 通道退出",ctx.name());
+        log.info("{} 通道退出",ctx.channel().remoteAddress());
         NettySocketHolder.remove((NioSocketChannel) ctx.channel());
     }
 
@@ -45,9 +46,9 @@ public class ShannonHeartServerHandler extends SimpleChannelInboundHandler<Socke
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent idleStateEvent = (IdleStateEvent) evt;
             if (idleStateEvent.state() == IdleState.READER_IDLE) {
-                log.info("服务端已经5秒没有收到信息,向客户端发送心跳");
+                log.info("向客户端发送心跳...");
                 //向客户端发送消息
-                ctx.writeAndFlush(HEART_BEAT).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
+                ctx.writeAndFlush(PONG).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
             }
         }
 
@@ -57,21 +58,26 @@ public class ShannonHeartServerHandler extends SimpleChannelInboundHandler<Socke
     /**
      * 从通道中读取消息
      */
-    @Override
+    /*@Override
     protected void channelRead0(ChannelHandlerContext ctx, SocketMsg socketMsg) {
-        log.info("收到customProtocol={}", socketMsg);
+
         switch (socketMsg.getType()){
-            case HEART_BEAT:
+            case MsgType.PING_VALUE:
                 log.info("收到客户端的心跳");
-            case DH_SENDPUBKEY:
+            case MsgType.AUTH_VALUE:
                 log.info("收到客户端秘钥协商消息");
                 KeyPair keyPair = ECCUtil.initKey();
                 ByteBuf PublicKeyStr = Unpooled.unreleasableBuffer(
-                        Unpooled.copiedBuffer(new SocketMsg().setId(1).setType(MsgType.HEART_BEAT)
+                        Unpooled.copiedBuffer(new SocketMsg().setId(1).setType(MsgType.AUTH_BACK_VALUE)
                                 .setContent(ECCUtil.getPublicKeyStr(keyPair)).toString(), CharsetUtil.UTF_8));
                 ctx.writeAndFlush(PublicKeyStr);
         }
 
         NettySocketHolder.put(socketMsg.getId(), (NioSocketChannel) ctx.channel());
+    }*/
+
+    @Override
+    protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
+        log.info("收到客户端消息：{}", msg);
     }
 }

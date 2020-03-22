@@ -14,11 +14,17 @@ public class ShannonDecoder extends ByteToMessageDecoder {
     @Override
     protected void decode(ChannelHandlerContext channelHandlerContext, ByteBuf byteBuf, List<Object> list) {
         long id = byteBuf.readLong();
+
+        byteBuf.readBytes(new byte[4]);
+        int msgType = byteBuf.readInt();
+
         byte[] bytes = new byte[byteBuf.readableBytes()];
         byteBuf.readBytes(bytes);
         String content = new String(bytes);
+
         SocketMsg socketMsg = new SocketMsg();
         socketMsg.setId(id);
+        socketMsg.setType(msgType);
         socketMsg.setContent(content);
         list.add(socketMsg);
     }

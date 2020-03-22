@@ -1,6 +1,6 @@
 package com.shannon.server.tcpserver;
 
-import com.shannon.server.initializer.ShannonChannelInitializer;
+import com.shannon.server.initializer.ServerChannelInit;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelOption;
@@ -52,7 +52,7 @@ public class ShannonNettyServer {
                 .childOption(ChannelOption.SO_KEEPALIVE, true)
                 //将小的数据包包装成更大的帧进行传送，提高网络的负载,即TCP延迟传输
                 .childOption(ChannelOption.TCP_NODELAY, true)
-                .childHandler(new ShannonChannelInitializer());
+                .childHandler(new ServerChannelInit());
         //绑定并开始接受传入的连接。
         ChannelFuture future = bootstrap.bind().sync();
         if (future.isSuccess()) {
