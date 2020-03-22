@@ -2,15 +2,12 @@ package com.shannon.client.handler;
 
 import com.shannon.common.enums.MsgType;
 import com.shannon.common.model.SocketMsg;
-import com.shannon.common.util.ECCUtil;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import com.shannon.common.util.ECSignUtil;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
-import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.security.KeyPair;
@@ -74,8 +71,8 @@ public class ShannonHeartClientHandler extends SimpleChannelInboundHandler<Socke
     }
 
     private SocketMsg sendDH(){
-        keyPair = ECCUtil.initKey();
-        String publicKey = ECCUtil.getPublicKeyStr(keyPair);
+        keyPair = ECSignUtil.initKey();
+        String publicKey = ECSignUtil.getPublicKeyStr(keyPair);
         return new SocketMsg().setId(1).setType(MsgType.AUTH_VALUE).setContent(publicKey);
     }
 }

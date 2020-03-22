@@ -11,7 +11,7 @@ import java.security.spec.ECGenParameterSpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 
-public class ECCUtil {
+public class ECSignUtil {
     public static final String ALGORITHM = "EC";
     public static final String SIGN_ALGORITHM = "SHA256withECDSA";
 

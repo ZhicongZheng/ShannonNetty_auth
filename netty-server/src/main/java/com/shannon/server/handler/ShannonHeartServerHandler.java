@@ -2,9 +2,8 @@ package com.shannon.server.handler;
 
 import com.shannon.common.enums.MsgType;
 import com.shannon.common.model.SocketMsg;
-import com.shannon.common.util.ECCUtil;
+import com.shannon.common.util.ECSignUtil;
 import com.shannon.server.util.AESKeyMap;
-import com.shannon.server.util.ClientStatus;
 import com.shannon.server.util.NettySocketHolder;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -70,9 +69,9 @@ public class ShannonHeartServerHandler extends SimpleChannelInboundHandler<Socke
                 break;
             case MsgType.AUTH_VALUE:
                 log.info("收到客户端秘钥协商消息,向客户端发送公钥");
-                KeyPair keyPair = ECCUtil.initKey();
+                KeyPair keyPair = ECSignUtil.initKey();
                 SocketMsg PublicKeyStr = new SocketMsg().setId(1).setType(MsgType.AUTH_BACK_VALUE)
-                        .setContent(ECCUtil.getPublicKeyStr(keyPair));
+                        .setContent(ECSignUtil.getPublicKeyStr(keyPair));
                 log.info("服务端生成秘钥");
                 String key = socketMsg.getContent()+PublicKeyStr;
                 AESKeyMap.put(ctx.channel(),key);
