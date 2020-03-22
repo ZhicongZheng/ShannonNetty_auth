@@ -1,32 +1,33 @@
 package com.shannon.common.enums;
 
 public enum MsgType {
-    //验证
+    //第一次握手，客户端主动认证
     AUTH(1),
+    //第二次握手，服务端认证返回
+    AUTH_BACK(2),
+    //第三次握手，客户端发送验证消息，验证消息准确性
+    AUTH_CHECK(3),
     //ping
-    PING(2),
+    PING(4),
     //pong
-    PONG(3),
+    PONG(5),
     //上传数据
-    UPLOAD_DATA(4),
+    UPLOAD_DATA(6),
     //推送数据
-    PUSH_DATA(5),
-    //验证返回
-    AUTH_BACK(6);
+    PUSH_DATA(7);
+
 
     private final int value;
 
     public static final int AUTH_VALUE = 1;
+    public static final int AUTH_BACK_VALUE = 2;
+    public static final int AUTH_CHECK_VALUE = 3;
+    public static final int PING_VALUE = 4;
+    public static final int PONG_VALUE = 5;
+    public static final int UPLOAD_DATA_VALUE = 6;
+    public static final int PUSH_DATA_VALUE = 7;
 
-    public static final int PING_VALUE = 2;
 
-    public static final int PONG_VALUE = 3;
-
-    public static final int UPLOAD_DATA_VALUE = 4;
-
-    public static final int PUSH_DATA_VALUE = 5;
-
-    public static final int AUTH_BACK_VALUE = 6;
 
     @Deprecated
     public static MsgType valueOf(int value) {
@@ -36,11 +37,12 @@ public enum MsgType {
     public static MsgType forNumber(int value) {
         switch (value) {
             case 1: return AUTH;
-            case 2: return PING;
-            case 3: return PONG;
-            case 4: return UPLOAD_DATA;
-            case 5: return PUSH_DATA;
-            case 11: return AUTH_BACK;
+            case 2: return AUTH_BACK;
+            case 3: return AUTH_CHECK;
+            case 4: return PING;
+            case 5: return PONG;
+            case 6: return UPLOAD_DATA;
+            case 7: return PUSH_DATA;
             default: return null;
         }
     }

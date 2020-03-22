@@ -13,16 +13,22 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 
+import java.security.KeyPair;
+
 /**
  * Socket服务器事件处理器
  *
  */
 @Slf4j
-public class ShannonHeartClientHandler extends SimpleChannelInboundHandler<String> {
+public class ShannonHeartClientHandler extends SimpleChannelInboundHandler<SocketMsg> {
 
-    private static final ByteBuf PING = Unpooled.unreleasableBuffer(
-            Unpooled.copiedBuffer(new SocketMsg().setId(1).setType(MsgType.PING_VALUE).setContent("ping").toString()
-                    +System.getProperty("line.separator"), CharsetUtil.UTF_8));
+    private static String key = "";
+
+    private static KeyPair keyPair =null;
+
+    private static final SocketMsg PING =new SocketMsg().setId(1).setType(MsgType.PING_VALUE).setContent("ping");
+
+    private static final SocketMsg PONG =new SocketMsg().setId(1).setType(MsgType.PONG_VALUE).setContent("pong");
 
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt instanceof IdleStateEvent) {
@@ -49,15 +55,27 @@ public class ShannonHeartClientHandler extends SimpleChannelInboundHandler<Strin
      *  每当从服务端接收到新数据时，都会使用收到的消息调用此方法 channelRead0(),在此示例中，接收消息的类型是ByteBuf。
      */
     @Override
-    protected void channelRead0(ChannelHandlerContext channelHandlerContext, String msg) {
+    protected void channelRead0(ChannelHandlerContext ctx, SocketMsg msg) {
         //从服务端收到消息时被调用
-        log.info("客户端收到消息={}", msg);
+        switch (msg.getType()){
+            case MsgType.PING_VALUE:
+                log.info("收到服务端的心跳");
+                ctx.writeAndFlush(PONG);
+                break;
+            case MsgType.AUTH_BACK_VALUE:
+                log.info("收到服务端公钥，开始生成秘钥并验证");
+                key = keyPair.getPublic()+msg.getContent();
+                SocketMsg login = new SocketMsg()
+                        .setId(1).setType(MsgType.AUTH_CHECK_VALUE).setContent("test");
+                ctx.writeAndFlush(login);
+                break;
+            default:break;
+        }
     }
 
-    private ByteBuf sendDH(){
-        String publicKey = ECCUtil.getPublicKeyStr(ECCUtil.initKey());
-        return Unpooled.unreleasableBuffer(
-                Unpooled.copiedBuffer(new SocketMsg().setId(1).setType(MsgType.AUTH_VALUE).setContent(publicKey).toString()
-                        +System.getProperty("line.separator"), CharsetUtil.UTF_8));
+    private SocketMsg sendDH(){
+        keyPair = ECCUtil.initKey();
+        String publicKey = ECCUtil.getPublicKeyStr(keyPair);
+        return new SocketMsg().setId(1).setType(MsgType.AUTH_VALUE).setContent(publicKey);
     }
 }

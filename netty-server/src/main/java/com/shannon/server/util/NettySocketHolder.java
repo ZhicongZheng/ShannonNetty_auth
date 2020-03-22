@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class NettySocketHolder {
 
-    private static final Map<Long, NioSocketChannel> MAP = new ConcurrentHashMap<>(16);
+    private static Map<Long, NioSocketChannel> MAP = new ConcurrentHashMap<>(16);
 
     public static void put(Long id, NioSocketChannel socketChannel) {
         MAP.put(id, socketChannel);
