@@ -1,8 +1,9 @@
 package com.shannon.server.handler;
 
 import com.shannon.common.enums.MsgType;
+import com.shannon.common.model.ECKeys;
 import com.shannon.common.model.SocketMsg;
-import com.shannon.common.util.ECSignUtil;
+import com.shannon.common.util.EncryptOrDecryptUtil;
 import com.shannon.server.util.AESKeyMap;
 import com.shannon.server.util.NettySocketHolder;
 import io.netty.channel.ChannelFutureListener;
@@ -14,7 +15,7 @@ import io.netty.handler.timeout.IdleStateEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.security.KeyPair;
+import javax.crypto.Cipher;
 
 /**
  * Socket服务器事件处理器
@@ -61,33 +62,45 @@ public class ShannonHeartServerHandler extends SimpleChannelInboundHandler<Socke
      * 从通道中读取消息
      */
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, SocketMsg socketMsg) {
-        switch (socketMsg.getType()){
+    protected void channelRead0(ChannelHandlerContext ctx, SocketMsg msg) {
+        switch (msg.getType()){
             case MsgType.PING_VALUE:
                 log.info("收到客户端的心跳");
                 ctx.writeAndFlush(PONG);
                 break;
             case MsgType.AUTH_VALUE:
-                log.info("收到客户端秘钥协商消息,向客户端发送公钥");
-                KeyPair keyPair = ECSignUtil.initKey();
+                log.info("收到客户端秘钥协商消息,{}",msg.getContent());
+
+                ECKeys ecKeys = EncryptOrDecryptUtil.getEcKeys();
+                System.out.println("【服务端初始化公钥serPubKey】" + ecKeys.getPubKey());
+                System.out.println("【服务端初始化私钥serPriKey】" + ecKeys.getPriKey());
                 SocketMsg PublicKeyStr = new SocketMsg().setId(1).setType(MsgType.AUTH_BACK_VALUE)
-                        .setContent(ECSignUtil.getPublicKeyStr(keyPair));
-                log.info("服务端生成秘钥");
-                String key = socketMsg.getContent()+PublicKeyStr;
+                        .setContent(ecKeys.getPubKey());
+
+                String key = EncryptOrDecryptUtil.ecdhKey(ecKeys.getPriKey(),msg.getContent());
+                log.info("服务端协商出秘钥：{}",key);
+                //将改秘钥加入秘钥库
                 AESKeyMap.put(ctx.channel(),key);
+
                 ctx.writeAndFlush(PublicKeyStr);
                 break;
             case MsgType.AUTH_CHECK_VALUE:
                 log.info("服务端验证秘钥");
+                //获取此通道对应的秘钥
                 String k = AESKeyMap.get(ctx.channel());
-                if (!socketMsg.getContent().equals("test")){
+                //确认秘钥的正确性
+                String login = EncryptOrDecryptUtil.doAES(msg.getContent(),k, Cipher.DECRYPT_MODE);
+                log.info("解密出客户端登录数据:{}",login);
+                if (!("login").equals(login)){
                     log.info("非法客户端，关闭连接");
                     ctx.channel().close();
                 }
+                log.info("客户端{}验证通过，加入连接列表",ctx.name());
+                NettySocketHolder.put(msg.getId(), (NioSocketChannel) ctx.channel());
                 break;
             default:break;
         }
-        NettySocketHolder.put(socketMsg.getId(), (NioSocketChannel) ctx.channel());
+
 
     }
 }

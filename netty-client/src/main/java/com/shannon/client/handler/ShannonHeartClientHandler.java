@@ -1,8 +1,9 @@
 package com.shannon.client.handler;
 
 import com.shannon.common.enums.MsgType;
+import com.shannon.common.model.ECKeys;
 import com.shannon.common.model.SocketMsg;
-import com.shannon.common.util.ECSignUtil;
+import com.shannon.common.util.EncryptOrDecryptUtil;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -10,7 +11,7 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import lombok.extern.slf4j.Slf4j;
 
-import java.security.KeyPair;
+import javax.crypto.Cipher;
 
 /**
  * Socket服务器事件处理器
@@ -18,10 +19,10 @@ import java.security.KeyPair;
  */
 @Slf4j
 public class ShannonHeartClientHandler extends SimpleChannelInboundHandler<SocketMsg> {
-
-    private static String key = "";
-
-    private static KeyPair keyPair =null;
+    //AES加密的秘钥
+    private static String key = null;
+    //ECC的公钥和私钥
+    private static ECKeys ecKeys =null;
 
     private static final SocketMsg PING =new SocketMsg().setId(1).setType(MsgType.PING_VALUE).setContent("ping");
 
@@ -60,10 +61,14 @@ public class ShannonHeartClientHandler extends SimpleChannelInboundHandler<Socke
                 ctx.writeAndFlush(PONG);
                 break;
             case MsgType.AUTH_BACK_VALUE:
-                log.info("收到服务端公钥，开始生成秘钥并验证");
-                key = keyPair.getPublic()+msg.getContent();
+                log.info("收到服务端公钥，开始秘钥协商:{}",msg.getContent());
+
+                key = EncryptOrDecryptUtil.ecdhKey(ecKeys.getPriKey(),msg.getContent());
+                log.info("客户端开始秘钥协商完成，开始验证秘钥正确性,秘钥为:{}",key);
+                String content = EncryptOrDecryptUtil.doAES("login",key, Cipher.ENCRYPT_MODE);
                 SocketMsg login = new SocketMsg()
-                        .setId(1).setType(MsgType.AUTH_CHECK_VALUE).setContent("test");
+                        .setId(1).setType(MsgType.AUTH_CHECK_VALUE).setContent(content);
+
                 ctx.writeAndFlush(login);
                 break;
             default:break;
@@ -71,8 +76,9 @@ public class ShannonHeartClientHandler extends SimpleChannelInboundHandler<Socke
     }
 
     private SocketMsg sendDH(){
-        keyPair = ECSignUtil.initKey();
-        String publicKey = ECSignUtil.getPublicKeyStr(keyPair);
-        return new SocketMsg().setId(1).setType(MsgType.AUTH_VALUE).setContent(publicKey);
+        ecKeys = EncryptOrDecryptUtil.getEcKeys();
+        System.out.println("【客户端初始化公钥cliPubKey】" + ecKeys.getPubKey());
+        System.out.println("【客户端初始化私钥cliPriKey】" + ecKeys.getPriKey());
+        return new SocketMsg().setId(1).setType(MsgType.AUTH_VALUE).setContent(ecKeys.getPubKey());
     }
 }

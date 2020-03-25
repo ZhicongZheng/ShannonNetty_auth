@@ -1,5 +1,6 @@
 package com.shannon.common.util;
 
+import com.shannon.common.model.ECKeys;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.springframework.util.StringUtils;
 
@@ -7,6 +8,7 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import javax.crypto.spec.SecretKeySpec;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
@@ -42,7 +44,7 @@ public class EncryptOrDecryptUtil {
         String cliPriKey = initKeys.get("cliPriKey");
         System.out.println("【客户端初始化私钥cliPriKey】" + cliPriKey);
 
-        String tempSerPubKey = tempKeys.get("serPubKey");
+       /* String tempSerPubKey = tempKeys.get("serPubKey");
         System.out.println("【服务端临时公钥tempSerPubKey】" + tempSerPubKey);
         String tempSerPriKey = tempKeys.get("serPriKey");
         System.out.println("【服务端临时私钥tempSerPriKey】" + tempSerPriKey);
@@ -50,7 +52,7 @@ public class EncryptOrDecryptUtil {
         System.out.println("【客户端临时公钥tempCliPubKey】" + tempCliPubKey);
         String tempCliPriKey = tempKeys.get("cliPriKey");
         System.out.println("【客户端临时公钥tempCliPriKey】" + tempCliPriKey);
-        System.out.println("*******************************************************");
+        System.out.println("*******************************************************");*/
 
 
         String request = "{\"serviceHeader\":{\"serviceId\":\"1010\",\"responseCode\":\"000000\",\"requestMsg\":\"请求成功\"},\"serviceBody\":{\"sessionId\":\"bf2d5af85239439aa56db5a149ddaaac\",\"userId\":null,\"deviceId\":\"990009263463476\",\"lastAccessTime\":\"2018-06-11 14:30:21\"}}";
@@ -58,45 +60,49 @@ public class EncryptOrDecryptUtil {
 
         //客户端加密
         System.out.println("start-------");
-        Map<String, String> clientRequest = clientEncryption(request, tempCliPriKey, cliPriKey, serPubKey);
+        Map<String, String> clientRequest = clientEncryption(request, cliPriKey, cliPriKey, serPubKey);
         System.out.println("end-------client encrypt result: 【secretContent】" + clientRequest.get("secretContent") + " 【signData】" + clientRequest.get("signData"));
 
         //服务端解密
         System.out.println("start-------");
-        Map<String, String> serverResult = serverDecryption(clientRequest.get("secretContent"), clientRequest.get("signData"), tempCliPubKey, serPriKey, cliPubKey);
+        Map<String, String> serverResult = serverDecryption(clientRequest.get("secretContent"), clientRequest.get("signData"), cliPubKey, serPriKey, cliPubKey);
         System.out.println("end-------server decrypt result: " + serverResult);
 
         //服务端加密
         System.out.println("start-------");
-        Map<String, String> serverResponse = serverEncryption(response, tempSerPriKey, cliPubKey, serPriKey);
+        Map<String, String> serverResponse = serverEncryption(response, serPriKey, cliPubKey, serPriKey);
         System.out.println("end-------server encrypt result: " + serverResponse);
 
         //客户端解密
         System.out.println("start-------");
-        Map<String, String> clientResult = clientDecryption(serverResponse.get("secretContent"), serverResponse.get("signData"), tempSerPubKey, cliPriKey, serPubKey);
+        Map<String, String> clientResult = clientDecryption(serverResponse.get("secretContent"), serverResponse.get("signData"), serPubKey, cliPriKey, serPubKey);
         System.out.println("end-------client encrypt result: " + clientResult);
 
 
     }
 
+    public static ECKeys getEcKeys(){
+        Map<String,String> map = generatorKey();
+        return new ECKeys().setPubKey(map.get("serPubKey")).setPriKey(map.get("serPriKey"));
+    }
+
     /**
-     * 生成密钥公共方法
-     * @return
+     * 生成公钥和私钥
      */
     public static Map<String, String> generatorKey(){
-        Map<String, String> keys = new HashMap();
+        Map<String, String> keys = new HashMap<>(2);
         Provider provider = new BouncyCastleProvider();
-        KeyPairGenerator keyPairGeneratorServer = null;
-        KeyPairGenerator keyPairGeneratorClient = null;
+        KeyPairGenerator keyPairGenerator;
+        KeyPairGenerator keyPairGeneratorClient;
         try {
             //1.服务端初始化密钥
-            keyPairGeneratorServer = KeyPairGenerator.getInstance("ECDH", provider);
-            keyPairGeneratorServer.initialize(256);
-            KeyPair keyPairSer = keyPairGeneratorServer.generateKeyPair();
+            keyPairGenerator = KeyPairGenerator.getInstance("ECDH", provider);
+            keyPairGenerator.initialize(256);
+            KeyPair keyPairSer = keyPairGenerator.generateKeyPair();
 
             //生成服务端密钥
-            String serpubKey = Base64.getMimeEncoder().encodeToString(keyPairSer.getPublic().getEncoded());
-            String serPriKey = Base64.getMimeEncoder().encodeToString(keyPairSer.getPrivate().getEncoded());
+            String pubKey = Base64.getMimeEncoder().encodeToString(keyPairSer.getPublic().getEncoded());
+            String priKey = Base64.getMimeEncoder().encodeToString(keyPairSer.getPrivate().getEncoded());
 
             //2.客户端初始化密钥
             keyPairGeneratorClient = KeyPairGenerator.getInstance("ECDH", provider);
@@ -106,8 +112,8 @@ public class EncryptOrDecryptUtil {
             //生成客户端密钥
             String cliPubKey = Base64.getMimeEncoder().encodeToString(keyPairCli.getPublic().getEncoded());
             String cliPriKey = Base64.getMimeEncoder().encodeToString(keyPairCli.getPrivate().getEncoded());
-            keys.put("serPubKey", serpubKey);
-            keys.put("serPriKey", serPriKey);
+            keys.put("serPubKey", pubKey);
+            keys.put("serPriKey", priKey);
             keys.put("cliPubKey", cliPubKey);
             keys.put("cliPriKey", cliPriKey);
         } catch (NoSuchAlgorithmException e) {
@@ -126,7 +132,7 @@ public class EncryptOrDecryptUtil {
      */
     public static Map<String, String> clientEncryption(String content, String temCliPriKey, String cliPriKey, String serPubKey){
         System.out.println("开始数据加密........");
-        Map<String, String> result = new HashMap();
+        Map<String, String> result = new HashMap<>(2);
 
         //生成签名数据
         String signData = sign(content, cliPriKey);
@@ -264,7 +270,7 @@ public class EncryptOrDecryptUtil {
      * @param pubKey 公钥
      * @return
      */
-    private static String ecdhKey(String priKey, String pubKey) {
+    public static String ecdhKey(String priKey, String pubKey) {
 
         //使用ECDH-BC方法添加进环境信息内
         Security.addProvider(new BouncyCastleProvider());
@@ -273,12 +279,12 @@ public class EncryptOrDecryptUtil {
             //初始化ECDH，KeyFactory
             KeyFactory keyFactory = KeyFactory.getInstance("ECDH", "BC");
             //处理私钥
-            byte[] priKeybytes = Base64.getMimeDecoder().decode(priKey.getBytes("utf-8"));
+            byte[] priKeybytes = Base64.getMimeDecoder().decode(priKey.getBytes(StandardCharsets.UTF_8));
             PKCS8EncodedKeySpec pkcs8EncodedKeySpec = new PKCS8EncodedKeySpec(priKeybytes);
             PrivateKey ecPriKey = keyFactory.generatePrivate(pkcs8EncodedKeySpec);
 
             //处理公钥
-            byte[] pubKeyBytes = Base64.getMimeDecoder().decode(pubKey.getBytes("utf-8"));
+            byte[] pubKeyBytes = Base64.getMimeDecoder().decode(pubKey.getBytes(StandardCharsets.UTF_8));
             X509EncodedKeySpec pubX509 = new X509EncodedKeySpec(pubKeyBytes);
             PublicKey ecPubKey = keyFactory.generatePublic(pubX509);
 
@@ -286,15 +292,8 @@ public class EncryptOrDecryptUtil {
             akeyAgree = KeyAgreement.getInstance("ECDH", "BC");
             akeyAgree.init(ecPriKey);
             akeyAgree.doPhase(ecPubKey, true);
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (NoSuchProviderException e) {
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        } catch (InvalidKeySpecException e) {
-            e.printStackTrace();
-        } catch (InvalidKeyException e) {
+        } catch (NoSuchAlgorithmException | NoSuchProviderException |
+                InvalidKeySpecException | InvalidKeyException e) {
             e.printStackTrace();
         }
         return Base64.getMimeEncoder().encodeToString(akeyAgree.generateSecret());
@@ -302,12 +301,12 @@ public class EncryptOrDecryptUtil {
 
     /**
      * AES加密数据
-     * @param data
-     * @param key
-     * @param mode
+     * @param data 要加密的数据
+     * @param key  加密秘钥
+     * @param mode 加密模式，加密还是解密
      * @return
      */
-    private static String doAES(String data, String key, int mode) {
+    public static String doAES(String data, String key, int mode) {
         try {
             if (StringUtils.isEmpty(data) || StringUtils.isEmpty(key)) {
                 return null;
@@ -316,18 +315,18 @@ public class EncryptOrDecryptUtil {
             byte[] content;
             //true 加密内容 false 解密内容
             if (encrypt) {
-                content = data.getBytes("UTF-8");
+                content = data.getBytes(StandardCharsets.UTF_8);
             } else {
                 content = parseHexStr2Byte(data);
             }
-            SecretKeySpec keySpec = new SecretKeySpec(md5Digest.digest(key.getBytes("UTF-8")), "AES");//构造一个密钥
+            SecretKeySpec keySpec = new SecretKeySpec(md5Digest.digest(key.getBytes(StandardCharsets.UTF_8)), "AES");//构造一个密钥
             Cipher cipher = Cipher.getInstance("AES");// 创建密码器
             cipher.init(mode, keySpec);// 初始化
             byte[] result = cipher.doFinal(content);//加密或解密
             if (encrypt) {
                 return parseByte2HexStr(result);
             } else {
-                return new String(result, "UTF-8");
+                return new String(result, StandardCharsets.UTF_8);
             }
         } catch (Exception e) {
             e.printStackTrace();
