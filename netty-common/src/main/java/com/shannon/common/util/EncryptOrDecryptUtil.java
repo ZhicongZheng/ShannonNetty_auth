@@ -7,7 +7,6 @@ import org.springframework.util.StringUtils;
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.spec.InvalidKeySpecException;
@@ -128,7 +127,6 @@ public class EncryptOrDecryptUtil {
      * @param temCliPriKey 客户端临时私钥
      * @param cliPriKey 客户端初始化私钥
      * @param serPubKey 服务端初始化公钥
-     * @return
      */
     public static Map<String, String> clientEncryption(String content, String temCliPriKey, String cliPriKey, String serPubKey){
         System.out.println("开始数据加密........");
@@ -155,11 +153,10 @@ public class EncryptOrDecryptUtil {
      * @param tmpSerPubKey  服务端临时公钥
      * @param cliPriKey 客户端初始化私钥
      * @param serPubKey 服务端初始化公钥
-     * @return
      */
     public static Map<String, String> clientDecryption(String secretContent, String signData, String tmpSerPubKey, String cliPriKey, String serPubKey){
         System.out.println("开始客户端解密......");
-        Map<String, String> result = new HashMap();
+        Map<String, String> result = new HashMap<>();
         String key = ecdhKey(cliPriKey, tmpSerPubKey);
         System.out.println("开锁钥匙：ecdhKey【" + key + "】");
 
@@ -167,6 +164,10 @@ public class EncryptOrDecryptUtil {
         String textContent = doAES(secretContent, key, Cipher.DECRYPT_MODE);
         System.out.println("解密后内容：" + textContent);
 
+        if (textContent==null){
+            System.err.println("解密失败！");
+            return null;
+        }
         //验签
         boolean res = verify(textContent, serPubKey, signData);
         if(!res){
@@ -185,11 +186,10 @@ public class EncryptOrDecryptUtil {
      * @param temSerPriKey 服务端临时私钥
      * @param cliPubKey 客户端初始化公钥
      * @param serPriKey 服务端初始化私钥
-     * @return
      */
     public static Map<String, String> serverEncryption(String content, String temSerPriKey, String cliPubKey, String serPriKey){
         System.out.println("开始服务端解密......");
-        Map<String, String> result = new HashMap();
+        Map<String, String> result = new HashMap<>();
         String signData = sign(content, serPriKey);
         System.out.println("加签【" + signData + "】");
 
@@ -210,11 +210,10 @@ public class EncryptOrDecryptUtil {
      * @param tmpCliPubKey 客户端临时公钥
      * @param serPriKey 服务端初始化私钥
      * @param cliPubKey 客户端初始化公钥
-     * @return
      */
     public static Map<String, String> serverDecryption(String secrtContent, String signData, String tmpCliPubKey, String serPriKey, String cliPubKey){
 
-        Map<String, String> result = new HashMap();
+        Map<String, String> result = new HashMap<>();
         String key = ecdhKey(serPriKey, tmpCliPubKey);
         System.out.println("开锁钥匙【" + key + "】");
 
@@ -234,12 +233,11 @@ public class EncryptOrDecryptUtil {
      * 生成签名数据
      * @param content 加密数据
      * @param priKey 私钥
-     * @return
      */
     private static String sign(String content, String priKey) {
         try {
-            byte[] keyBytes = Base64.getMimeDecoder().decode(priKey.getBytes("utf-8"));
-            byte[] contentBytes = Base64.getMimeDecoder().decode(content.getBytes("utf-8"));
+            byte[] keyBytes = Base64.getMimeDecoder().decode(priKey.getBytes(StandardCharsets.UTF_8));
+            byte[] contentBytes = Base64.getMimeDecoder().decode(content.getBytes(StandardCharsets.UTF_8));
 
             PKCS8EncodedKeySpec pkcs8EncodedKeySpec = new PKCS8EncodedKeySpec(keyBytes);
             KeyFactory keyFactory = KeyFactory.getInstance("EC");
@@ -250,15 +248,7 @@ public class EncryptOrDecryptUtil {
             signature.update(contentBytes);
             return Base64.getMimeEncoder().encodeToString(signature.sign());
 
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (InvalidKeySpecException e) {
-            e.printStackTrace();
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();
-        } catch (SignatureException e) {
-            e.printStackTrace();
-        } catch (UnsupportedEncodingException e) {
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException | SignatureException e) {
             e.printStackTrace();
         }
         return null;
@@ -268,7 +258,7 @@ public class EncryptOrDecryptUtil {
      * 密钥磋商
      * @param priKey 私钥
      * @param pubKey 公钥
-     * @return
+     * @return 协商出的秘钥
      */
     public static String ecdhKey(String priKey, String pubKey) {
 
@@ -296,7 +286,12 @@ public class EncryptOrDecryptUtil {
                 InvalidKeySpecException | InvalidKeyException e) {
             e.printStackTrace();
         }
-        return Base64.getMimeEncoder().encodeToString(akeyAgree.generateSecret());
+        if(akeyAgree!=null){
+            return Base64.getMimeEncoder().encodeToString(akeyAgree.generateSecret());
+        }else {
+            return null;
+        }
+
     }
 
     /**
@@ -304,7 +299,7 @@ public class EncryptOrDecryptUtil {
      * @param data 要加密的数据
      * @param key  加密秘钥
      * @param mode 加密模式，加密还是解密
-     * @return
+     * @return  密文
      */
     public static String doAES(String data, String key, int mode) {
         try {
@@ -336,14 +331,12 @@ public class EncryptOrDecryptUtil {
 
     /**
      * 将二进制转化成十六进制
-     * @param result
-     * @return
      */
     private static String parseByte2HexStr(byte[] result) {
-        StringBuffer buffer = new StringBuffer();
-        for(int i=0;i < result.length;i++){
-            String hex = Integer.toHexString(result[i] & 0xFF);
-            if(hex.length() == 1){
+        StringBuilder buffer = new StringBuilder();
+        for (byte b : result) {
+            String hex = Integer.toHexString(b & 0xFF);
+            if (hex.length() == 1) {
                 hex = '0' + hex;
             }
             buffer.append(hex.toUpperCase());
@@ -353,8 +346,6 @@ public class EncryptOrDecryptUtil {
 
     /**
      * 十六进制转换成二进制
-     * @param content
-     * @return
      */
     private static byte[] parseHexStr2Byte(String content) {
 
@@ -376,13 +367,13 @@ public class EncryptOrDecryptUtil {
      * @param textContent 解密明文
      * @param pubKey 公钥
      * @param signData 签名
-     * @return
+     * @return Boolean
      */
     private static boolean verify(String textContent, String pubKey, String signData) {
         try {
-            byte[] keyBytes = Base64.getMimeDecoder().decode(pubKey.getBytes("utf-8"));
-            byte[] contentBytes = Base64.getMimeDecoder().decode(textContent.getBytes("utf-8"));
-            byte[] signBytes = Base64.getMimeDecoder().decode(signData.getBytes("utf-8"));
+            byte[] keyBytes = Base64.getMimeDecoder().decode(pubKey.getBytes(StandardCharsets.UTF_8));
+            byte[] contentBytes = Base64.getMimeDecoder().decode(textContent.getBytes(StandardCharsets.UTF_8));
+            byte[] signBytes = Base64.getMimeDecoder().decode(signData.getBytes(StandardCharsets.UTF_8));
             X509EncodedKeySpec x509EncodedKeySpec = new X509EncodedKeySpec(keyBytes);
             KeyFactory keyFactory = KeyFactory.getInstance("EC");
             PublicKey publicKey = keyFactory.generatePublic(x509EncodedKeySpec);
@@ -392,15 +383,7 @@ public class EncryptOrDecryptUtil {
             signature.update(contentBytes);
 
             return signature.verify(signBytes);
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        } catch (InvalidKeySpecException e) {
-            e.printStackTrace();
-        } catch (InvalidKeyException e) {
-            e.printStackTrace();
-        } catch (SignatureException e) {
+        } catch (NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException | SignatureException e) {
             e.printStackTrace();
         }
         return Boolean.parseBoolean(null);
