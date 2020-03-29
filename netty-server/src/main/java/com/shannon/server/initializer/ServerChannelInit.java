@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * 配置新Channel的ChannelPipeline
+ * @author zzc
  */
 public class ServerChannelInit extends ChannelInitializer<Channel> {
 

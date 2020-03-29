@@ -1,7 +1,7 @@
 package com.shannon.client.handler;
 
 import com.shannon.common.enums.MsgType;
-import com.shannon.common.model.ECKeys;
+import com.shannon.common.model.EcKeys;
 import com.shannon.common.model.SocketMsg;
 import com.shannon.common.util.EncryptOrDecryptUtil;
 import io.netty.channel.ChannelFutureListener;
@@ -16,18 +16,20 @@ import javax.crypto.Cipher;
 /**
  * Socket服务器事件处理器
  *
+ * @author zzc
  */
 @Slf4j
 public class ShannonHeartClientHandler extends SimpleChannelInboundHandler<SocketMsg> {
-    //AES加密的秘钥
+    /** AES加密的秘钥*/
     private static String key = null;
-    //ECC的公钥和私钥
-    private static ECKeys ecKeys =null;
+    /** ECC的公钥和私钥*/
+    private static EcKeys ecKeys =null;
 
     private static final SocketMsg PING =new SocketMsg().setId(1).setType(MsgType.PING_VALUE).setContent("ping");
 
     private static final SocketMsg PONG =new SocketMsg().setId(1).setType(MsgType.PONG_VALUE).setContent("pong");
 
+    @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent idleStateEvent = (IdleStateEvent) evt;
@@ -46,7 +48,7 @@ public class ShannonHeartClientHandler extends SimpleChannelInboundHandler<Socke
      */
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        ctx.writeAndFlush(sendDH());
+        ctx.writeAndFlush(sendDh());
     }
 
     /**
@@ -75,7 +77,7 @@ public class ShannonHeartClientHandler extends SimpleChannelInboundHandler<Socke
         }
     }
 
-    private SocketMsg sendDH(){
+    private SocketMsg sendDh(){
         ecKeys = EncryptOrDecryptUtil.getEcKeys();
         System.out.println("【客户端初始化公钥cliPubKey】" + ecKeys.getPubKey());
         System.out.println("【客户端初始化私钥cliPriKey】" + ecKeys.getPriKey());

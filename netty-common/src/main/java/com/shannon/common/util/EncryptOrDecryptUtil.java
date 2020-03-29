@@ -1,6 +1,6 @@
 package com.shannon.common.util;
 
-import com.shannon.common.model.ECKeys;
+import com.shannon.common.model.EcKeys;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.springframework.util.StringUtils;
 
@@ -16,6 +16,10 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * ECC和AES工具类
+ * @author 郑智聪
+ */
 public class EncryptOrDecryptUtil {
 
     private static MessageDigest md5Digest;
@@ -43,17 +47,6 @@ public class EncryptOrDecryptUtil {
         String cliPriKey = initKeys.get("cliPriKey");
         System.out.println("【客户端初始化私钥cliPriKey】" + cliPriKey);
 
-       /* String tempSerPubKey = tempKeys.get("serPubKey");
-        System.out.println("【服务端临时公钥tempSerPubKey】" + tempSerPubKey);
-        String tempSerPriKey = tempKeys.get("serPriKey");
-        System.out.println("【服务端临时私钥tempSerPriKey】" + tempSerPriKey);
-        String tempCliPubKey = tempKeys.get("cliPubKey");
-        System.out.println("【客户端临时公钥tempCliPubKey】" + tempCliPubKey);
-        String tempCliPriKey = tempKeys.get("cliPriKey");
-        System.out.println("【客户端临时公钥tempCliPriKey】" + tempCliPriKey);
-        System.out.println("*******************************************************");*/
-
-
         String request = "{\"serviceHeader\":{\"serviceId\":\"1010\",\"responseCode\":\"000000\",\"requestMsg\":\"请求成功\"},\"serviceBody\":{\"sessionId\":\"bf2d5af85239439aa56db5a149ddaaac\",\"userId\":null,\"deviceId\":\"990009263463476\",\"lastAccessTime\":\"2018-06-11 14:30:21\"}}";
         String response = "{\"serviceId\":\"1010\",\"responseCode\":\"000000\",\"responseMsg\":\"请求成功\"}";
 
@@ -80,9 +73,9 @@ public class EncryptOrDecryptUtil {
 
     }
 
-    public static ECKeys getEcKeys(){
+    public static EcKeys getEcKeys(){
         Map<String,String> map = generatorKey();
-        return new ECKeys().setPubKey(map.get("serPubKey")).setPriKey(map.get("serPriKey"));
+        return new EcKeys().setPubKey(map.get("serPubKey")).setPriKey(map.get("serPriKey"));
     }
 
     /**
@@ -314,10 +307,12 @@ public class EncryptOrDecryptUtil {
             } else {
                 content = parseHexStr2Byte(data);
             }
-            SecretKeySpec keySpec = new SecretKeySpec(md5Digest.digest(key.getBytes(StandardCharsets.UTF_8)), "AES");//构造一个密钥
-            Cipher cipher = Cipher.getInstance("AES");// 创建密码器
-            cipher.init(mode, keySpec);// 初始化
-            byte[] result = cipher.doFinal(content);//加密或解密
+            //构造一个密钥
+            SecretKeySpec keySpec = new SecretKeySpec(md5Digest.digest(key.getBytes(StandardCharsets.UTF_8)), "AES");
+            // 创建密码器
+            Cipher cipher = Cipher.getInstance("AES");
+            cipher.init(mode, keySpec);
+            byte[] result = cipher.doFinal(content);
             if (encrypt) {
                 return parseByte2HexStr(result);
             } else {

@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Netty客户端
+ * @author zzc
  */
 @Slf4j
 @Component
@@ -59,7 +60,7 @@ public class ShannonNettyClient {
                         e.printStackTrace();
                         log.info("连接Netty服务端异常："+e.getMessage());
                     }
-                }, 20, TimeUnit.SECONDS);
+                }, 30, TimeUnit.SECONDS);
             }
         });
 

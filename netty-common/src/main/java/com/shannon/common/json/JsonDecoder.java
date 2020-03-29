@@ -12,7 +12,7 @@ import java.util.List;
 public class JsonDecoder extends ByteToMessageDecoder {
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
+    protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) {
         SocketMsg msg = null;
         try {
             int len = in.readableBytes();

@@ -21,11 +21,12 @@ import io.netty.handler.timeout.IdleStateHandler;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * @author zzc
  */
 public class ClientChannelInit extends ChannelInitializer<Channel> {
 
     @Override
-    protected void initChannel(Channel channel) throws Exception {
+    protected void initChannel(Channel channel) {
         ChannelPipeline p = channel.pipeline();
         //检测空闲必须放在这里 因为pipeline是分顺序加载的
         p.addLast(new IdleStateHandler(0,10, 0, TimeUnit.SECONDS));
