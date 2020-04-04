@@ -10,6 +10,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 
 import javax.crypto.Cipher;
 
@@ -24,10 +25,12 @@ public class ShannonHeartClientHandler extends SimpleChannelInboundHandler<Socke
     private static String key = null;
     /** ECC的公钥和私钥*/
     private static EcKeys ecKeys =null;
+    @Value("gatewayId")
+    private static String gatewayId;
 
-    private static final SocketMsg PING =new SocketMsg().setId(1).setType(MsgType.PING_VALUE).setContent("ping");
+    private static final SocketMsg PING =new SocketMsg().setGatewayId(gatewayId).setType(MsgType.PING_VALUE).setContent("ping");
 
-    private static final SocketMsg PONG =new SocketMsg().setId(1).setType(MsgType.PONG_VALUE).setContent("pong");
+    private static final SocketMsg PONG =new SocketMsg().setGatewayId(gatewayId).setType(MsgType.PONG_VALUE).setContent("pong");
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
@@ -52,7 +55,7 @@ public class ShannonHeartClientHandler extends SimpleChannelInboundHandler<Socke
     }
 
     /**
-     *  每当从服务端接收到新数据时，都会使用收到的消息调用此方法 channelRead0(),在此示例中，接收消息的类型是ByteBuf。
+     *  每当从服务端接收到新数据时，都会使用收到的消息调用此方法 channelRead0()
      */
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, SocketMsg msg) {
@@ -69,7 +72,7 @@ public class ShannonHeartClientHandler extends SimpleChannelInboundHandler<Socke
                 log.info("客户端开始秘钥协商完成，开始验证秘钥正确性,秘钥为:{}",key);
                 String content = EncryptOrDecryptUtil.doAES("login",key, Cipher.ENCRYPT_MODE);
                 SocketMsg login = new SocketMsg()
-                        .setId(1).setType(MsgType.AUTH_CHECK_VALUE).setContent(content);
+                        .setGatewayId(gatewayId).setType(MsgType.AUTH_CHECK_VALUE).setContent(content);
 
                 ctx.writeAndFlush(login);
                 break;

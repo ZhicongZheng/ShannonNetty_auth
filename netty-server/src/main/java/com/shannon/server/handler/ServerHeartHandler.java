@@ -1,22 +1,17 @@
 package com.shannon.server.handler;
 
 import com.shannon.common.enums.MsgType;
-import com.shannon.common.model.EcKeys;
 import com.shannon.common.model.SocketMsg;
-import com.shannon.common.util.EncryptOrDecryptUtil;
-import com.shannon.server.util.AESKeyMap;
+import com.shannon.server.util.AesKeyMap;
 import com.shannon.server.util.NettySocketHolder;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import javax.crypto.Cipher;
 
 /**
  * Socket心跳事件处理器
@@ -36,7 +31,8 @@ public class ServerHeartHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelInactive(ChannelHandlerContext ctx) {
         log.info("客户端【{}】断开连接",ctx.channel().remoteAddress());
-        NettySocketHolder.remove((NioSocketChannel) ctx.channel());
+        NettySocketHolder.remove(ctx.channel());
+        AesKeyMap.remove(ctx.channel());
     }
 
     /**
@@ -50,6 +46,8 @@ public class ServerHeartHandler extends ChannelInboundHandlerAdapter {
                 if(unRecPingTimes >= MAX_UN_REC_PING_TIMES){
                     // 连续超过N次未收到客户端的ping消息，那么关闭该通道，等待client重连
                     ctx.channel().close();
+                    NettySocketHolder.remove(ctx.channel());
+                    AesKeyMap.remove(ctx.channel());
                 }else{
                     // 失败计数器加1
                     unRecPingTimes++;
@@ -75,5 +73,6 @@ public class ServerHeartHandler extends ChannelInboundHandlerAdapter {
         }else {
             ctx.fireChannelRead(message);
         }
+        ReferenceCountUtil.release(msg);
     }
 }

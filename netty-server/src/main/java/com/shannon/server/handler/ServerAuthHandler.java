@@ -4,11 +4,10 @@ import com.shannon.common.enums.MsgType;
 import com.shannon.common.model.EcKeys;
 import com.shannon.common.model.SocketMsg;
 import com.shannon.common.util.EncryptOrDecryptUtil;
-import com.shannon.server.util.AESKeyMap;
+import com.shannon.server.util.AesKeyMap;
 import com.shannon.server.util.NettySocketHolder;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 
@@ -42,23 +41,24 @@ public class ServerAuthHandler extends ChannelInboundHandlerAdapter {
                 String key = EncryptOrDecryptUtil.ecdhKey(ecKeys.getPriKey(),msg.getContent());
                 log.info("服务端协商出秘钥：{}",key);
                 //将改秘钥加入秘钥库
-                AESKeyMap.put(ctx.channel(),key);
+                AesKeyMap.put(ctx.channel(),key);
 
                 ctx.writeAndFlush(publicKeyStr);
                 break;
             case MsgType.AUTH_CHECK_VALUE:
                 log.info("服务端验证秘钥");
                 //获取此通道对应的秘钥
-                String k = AESKeyMap.get(ctx.channel());
+                String k = AesKeyMap.get(ctx.channel());
                 //确认秘钥的正确性
                 String login = EncryptOrDecryptUtil.doAES(msg.getContent(),k, Cipher.DECRYPT_MODE);
                 log.info("解密出客户端登录数据:{}",login);
                 if (!("login").equals(login)){
                     log.info("非法客户端，关闭连接");
                     ctx.channel().close();
+                    AesKeyMap.remove(ctx.channel());
                 }
                 log.info("客户端{}验证通过，加入连接列表",ctx.name());
-                NettySocketHolder.put(msg.getId(), (NioSocketChannel) ctx.channel());
+                NettySocketHolder.put(msg.getGatewayId(), ctx.channel());
                 break;
             default:ctx.fireChannelRead(message);
         }

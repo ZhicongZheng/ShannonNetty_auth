@@ -6,7 +6,11 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class AESKeyMap {
+/**
+ * 支持并发的客户端管理器
+ * @author zzc
+ */
+public class AesKeyMap {
 
     private static Map<Channel, String> MAP = new ConcurrentHashMap<>(16);
 
@@ -18,7 +22,7 @@ public class AESKeyMap {
         return MAP.get(channel);
     }
 
-    public static Map<Channel, String> getMAP() {
+    public static Map<Channel, String> getMap() {
         return MAP;
     }
 
