@@ -1,18 +1,22 @@
 package com.shannon.client.handler;
 
+import com.shannon.client.tcpclient.ShannonNettyClient;
 import com.shannon.common.enums.MsgType;
 import com.shannon.common.model.EcKeys;
 import com.shannon.common.model.SocketMsg;
 import com.shannon.common.util.EncryptOrDecryptUtil;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import javax.crypto.Cipher;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Socket服务器事件处理器
@@ -27,6 +31,8 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg> {
     private static EcKeys ecKeys =null;
     @Value("gatewayId")
     private String gatewayId;
+    @Autowired
+    private ShannonNettyClient nettyClient;
 
     private static final SocketMsg PING =new SocketMsg().setGatewayId("1").setType(MsgType.PING_VALUE).setContent("ping");
 
@@ -51,7 +57,21 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg> {
      */
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        ctx.writeAndFlush(sendDh());
+        ctx.writeAndFlush(clientInit());
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        //如果运行过程中服务端挂了,执行重连机制
+        EventLoop eventLoop = ctx.channel().eventLoop();
+        eventLoop.schedule(() -> {
+            try {
+                nettyClient.start();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }, 10L, TimeUnit.SECONDS);
+        super.channelInactive(ctx);
     }
 
     /**
@@ -68,26 +88,29 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg> {
             case MsgType.AUTH_BACK_VALUE:
                 log.info("收到服务端公钥，开始秘钥协商:{}",msg.getContent());
 
-                key = EncryptOrDecryptUtil.ecdhKey(ecKeys.getPriKey(),msg.getContent());
-                log.info("客户端开始秘钥协商完成，开始验证秘钥正确性,秘钥为:{}",key);
-                String content = EncryptOrDecryptUtil.doAES("login",key, Cipher.ENCRYPT_MODE);
-                SocketMsg login = new SocketMsg()
-                        .setGatewayId("1").setType(MsgType.AUTH_CHECK_VALUE).setContent(content);
-
-                ctx.writeAndFlush(login);
+                ctx.writeAndFlush(this.ecdh(msg.getContent(),ecKeys.getPriKey()));
                 break;
             case MsgType.REFRESH_KEY_VALUE:
                 log.info("服务端主动刷新秘钥");
-                ctx.writeAndFlush(sendDh());
+
+                ctx.writeAndFlush(this.clientInit());
                 break;
             default:break;
         }
     }
 
-    private SocketMsg sendDh(){
+    private SocketMsg clientInit(){
         ecKeys = EncryptOrDecryptUtil.getEcKeys();
         System.out.println("【客户端初始化公钥cliPubKey】" + ecKeys.getPubKey());
         System.out.println("【客户端初始化私钥cliPriKey】" + ecKeys.getPriKey());
         return new SocketMsg().setGatewayId("1").setType(MsgType.AUTH_VALUE).setContent(ecKeys.getPubKey());
+    }
+
+    private SocketMsg ecdh(String serverPubKey, String clientPriKey){
+        key = EncryptOrDecryptUtil.ecdhKey(clientPriKey,serverPubKey);
+        log.info("客户端开始秘钥协商完成，开始验证秘钥正确性,秘钥为:{}",key);
+        String content = EncryptOrDecryptUtil.doAES("login",key, Cipher.ENCRYPT_MODE);
+        return new SocketMsg()
+                .setGatewayId("1").setType(MsgType.AUTH_CHECK_VALUE).setContent(content);
     }
 }
