@@ -1,5 +1,10 @@
 package com.shannon.common.enums;
 
+/**
+ * 消息类型枚举类
+ * @author zzc
+ */
+
 public enum MsgType {
     //第一次握手，客户端主动认证
     AUTH(1),
@@ -14,7 +19,9 @@ public enum MsgType {
     //上传数据
     UPLOAD_DATA(6),
     //推送数据
-    PUSH_DATA(7);
+    PUSH_DATA(7),
+    //服务端主动刷新秘钥
+    REFRESH_KEY(8);
 
 
     private final int value;
@@ -26,6 +33,7 @@ public enum MsgType {
     public static final int PONG_VALUE = 5;
     public static final int UPLOAD_DATA_VALUE = 6;
     public static final int PUSH_DATA_VALUE = 7;
+    public static final int REFRESH_KEY_VALUE = 8;
 
 
 
@@ -43,6 +51,7 @@ public enum MsgType {
             case 5: return PONG;
             case 6: return UPLOAD_DATA;
             case 7: return PUSH_DATA;
+            case 8: return REFRESH_KEY;
             default: return null;
         }
     }

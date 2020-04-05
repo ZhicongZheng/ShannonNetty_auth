@@ -20,17 +20,17 @@ import javax.crypto.Cipher;
  * @author zzc
  */
 @Slf4j
-public class ShannonHeartClientHandler extends SimpleChannelInboundHandler<SocketMsg> {
+public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg> {
     /** AES加密的秘钥*/
     private static String key = null;
     /** ECC的公钥和私钥*/
     private static EcKeys ecKeys =null;
     @Value("gatewayId")
-    private static String gatewayId;
+    private String gatewayId;
 
-    private static final SocketMsg PING =new SocketMsg().setGatewayId(gatewayId).setType(MsgType.PING_VALUE).setContent("ping");
+    private static final SocketMsg PING =new SocketMsg().setGatewayId("1").setType(MsgType.PING_VALUE).setContent("ping");
 
-    private static final SocketMsg PONG =new SocketMsg().setGatewayId(gatewayId).setType(MsgType.PONG_VALUE).setContent("pong");
+    private static final SocketMsg PONG =new SocketMsg().setGatewayId("1").setType(MsgType.PONG_VALUE).setContent("pong");
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
@@ -72,9 +72,13 @@ public class ShannonHeartClientHandler extends SimpleChannelInboundHandler<Socke
                 log.info("客户端开始秘钥协商完成，开始验证秘钥正确性,秘钥为:{}",key);
                 String content = EncryptOrDecryptUtil.doAES("login",key, Cipher.ENCRYPT_MODE);
                 SocketMsg login = new SocketMsg()
-                        .setGatewayId(gatewayId).setType(MsgType.AUTH_CHECK_VALUE).setContent(content);
+                        .setGatewayId("1").setType(MsgType.AUTH_CHECK_VALUE).setContent(content);
 
                 ctx.writeAndFlush(login);
+                break;
+            case MsgType.REFRESH_KEY_VALUE:
+                log.info("服务端主动刷新秘钥");
+                ctx.writeAndFlush(sendDh());
                 break;
             default:break;
         }
@@ -84,6 +88,6 @@ public class ShannonHeartClientHandler extends SimpleChannelInboundHandler<Socke
         ecKeys = EncryptOrDecryptUtil.getEcKeys();
         System.out.println("【客户端初始化公钥cliPubKey】" + ecKeys.getPubKey());
         System.out.println("【客户端初始化私钥cliPriKey】" + ecKeys.getPriKey());
-        return new SocketMsg().setId(1).setType(MsgType.AUTH_VALUE).setContent(ecKeys.getPubKey());
+        return new SocketMsg().setGatewayId("1").setType(MsgType.AUTH_VALUE).setContent(ecKeys.getPubKey());
     }
 }

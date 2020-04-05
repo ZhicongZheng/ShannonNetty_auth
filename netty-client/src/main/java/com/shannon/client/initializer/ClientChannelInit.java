@@ -1,21 +1,13 @@
 package com.shannon.client.initializer;
 
-import com.shannon.client.handler.ShannonHeartClientHandler;
+import com.shannon.client.handler.ClientHeartHandler;
 import com.shannon.common.json.JsonDecoder;
 import com.shannon.common.json.JsonEncoder;
-import com.shannon.common.model.SocketMsg;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import io.netty.handler.codec.DelimiterBasedFrameDecoder;
-import io.netty.handler.codec.Delimiters;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import io.netty.handler.codec.json.JsonObjectDecoder;
-import io.netty.handler.codec.string.StringDecoder;
-import io.netty.handler.codec.string.StringEncoder;
 import io.netty.handler.timeout.IdleStateHandler;
 
 import java.util.concurrent.TimeUnit;
@@ -39,6 +31,6 @@ public class ClientChannelInit extends ChannelInitializer<Channel> {
         p.addLast(new JsonEncoder());
 
         //客户端自定义的hanlder
-        p.addLast(new ShannonHeartClientHandler());
+        p.addLast(new ClientHeartHandler());
     }
 }

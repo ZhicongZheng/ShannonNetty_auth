@@ -82,7 +82,7 @@ public class EncryptOrDecryptUtil {
      * 生成公钥和私钥
      */
     public static Map<String, String> generatorKey(){
-        Map<String, String> keys = new HashMap<>(2);
+        Map<String, String> keys = new HashMap<>(4);
         Provider provider = new BouncyCastleProvider();
         KeyPairGenerator keyPairGenerator;
         KeyPairGenerator keyPairGeneratorClient;
