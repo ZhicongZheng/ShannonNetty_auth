@@ -1,4 +1,4 @@
-package com.shannon.server.util;
+package com.shannon.common.util;
 
 import io.netty.channel.Channel;
 import io.netty.channel.socket.nio.NioSocketChannel;

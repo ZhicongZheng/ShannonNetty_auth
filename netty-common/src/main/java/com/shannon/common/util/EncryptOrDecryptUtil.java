@@ -327,7 +327,7 @@ public class EncryptOrDecryptUtil {
     /**
      * 将二进制转化成十六进制
      */
-    private static String parseByte2HexStr(byte[] result) {
+    public static String parseByte2HexStr(byte[] result) {
         StringBuilder buffer = new StringBuilder();
         for (byte b : result) {
             String hex = Integer.toHexString(b & 0xFF);
@@ -342,7 +342,7 @@ public class EncryptOrDecryptUtil {
     /**
      * 十六进制转换成二进制
      */
-    private static byte[] parseHexStr2Byte(String content) {
+    public static byte[] parseHexStr2Byte(String content) {
 
         if(content.length() < 1){
             return null;

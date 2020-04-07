@@ -1,9 +1,12 @@
 package com.shannon.client.handler;
 
 import com.shannon.client.tcpclient.ShannonNettyClient;
+import com.shannon.common.codec.JsonDecoderAES;
+import com.shannon.common.codec.JsonEncoderAES;
 import com.shannon.common.enums.MsgType;
 import com.shannon.common.model.EcKeys;
 import com.shannon.common.model.SocketMsg;
+import com.shannon.common.util.AesKeyMap;
 import com.shannon.common.util.EncryptOrDecryptUtil;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -11,6 +14,7 @@ import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
+import io.netty.handler.timeout.IdleStateHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,8 +29,6 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg> {
-    /** AES加密的秘钥*/
-    private static String key = null;
     /** ECC的公钥和私钥*/
     private static EcKeys ecKeys =null;
     @Value("gatewayId")
@@ -87,8 +89,21 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg> {
                 break;
             case MsgType.AUTH_BACK_VALUE:
                 log.info("收到服务端公钥，开始秘钥协商:{}",msg.getContent());
-
-                ctx.writeAndFlush(this.ecdh(msg.getContent(),ecKeys.getPriKey()));
+                String key = EncryptOrDecryptUtil.ecdhKey(ecKeys.getPriKey(),msg.getContent());
+                AesKeyMap.put(ctx.channel(),key);
+                log.info("客户端秘钥协商完成，开始验证秘钥正确性,秘钥为:{}",key);
+                String content = EncryptOrDecryptUtil.doAES("login",key, Cipher.ENCRYPT_MODE);
+                SocketMsg login = new SocketMsg()
+                        .setGatewayId("1").setType(MsgType.AUTH_CHECK_VALUE).setContent(content);
+                ctx.writeAndFlush(login);
+                break;
+            case MsgType.LOGIN_SUCCESS_VALUE:
+                log.info("登陆成功，后续数据将使用AES进行加解密");
+                //用AES加解密替换掉默认的编解码器
+                ctx.pipeline().replace(ctx.pipeline().get("decoder"),"decoder",new JsonDecoderAES());
+                ctx.pipeline().replace(ctx.pipeline().get("encoder"),"encoder",new JsonEncoderAES());
+                //登录成功之后，才加入心跳机制
+                ctx.pipeline().addFirst(new IdleStateHandler(0,5, 0, TimeUnit.SECONDS));
                 break;
             case MsgType.REFRESH_KEY_VALUE:
                 log.info("服务端主动刷新秘钥");
@@ -106,11 +121,4 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg> {
         return new SocketMsg().setGatewayId("1").setType(MsgType.AUTH_VALUE).setContent(ecKeys.getPubKey());
     }
 
-    private SocketMsg ecdh(String serverPubKey, String clientPriKey){
-        key = EncryptOrDecryptUtil.ecdhKey(clientPriKey,serverPubKey);
-        log.info("客户端开始秘钥协商完成，开始验证秘钥正确性,秘钥为:{}",key);
-        String content = EncryptOrDecryptUtil.doAES("login",key, Cipher.ENCRYPT_MODE);
-        return new SocketMsg()
-                .setGatewayId("1").setType(MsgType.AUTH_CHECK_VALUE).setContent(content);
-    }
 }

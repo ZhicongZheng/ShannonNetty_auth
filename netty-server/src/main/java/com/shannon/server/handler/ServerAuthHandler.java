@@ -1,23 +1,23 @@
 package com.shannon.server.handler;
 
+import com.shannon.common.codec.JsonDecoderAES;
+import com.shannon.common.codec.JsonEncoderAES;
 import com.shannon.common.enums.MsgType;
 import com.shannon.common.model.EcKeys;
 import com.shannon.common.model.SocketMsg;
 import com.shannon.common.util.EncryptOrDecryptUtil;
-import com.shannon.server.util.AesKeyMap;
+import com.shannon.common.util.AesKeyMap;
 import com.shannon.server.util.NettySocketHolder;
 import com.shannon.server.util.SpringBeanFactory;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.ReferenceCountUtil;
-import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-import org.springframework.web.servlet.view.tiles3.SpringBeanPreparerFactory;
 
 import javax.crypto.Cipher;
-import javax.el.BeanNameResolver;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 服务端认证处理器
@@ -56,22 +56,33 @@ public class ServerAuthHandler extends ChannelInboundHandlerAdapter {
                     //确认秘钥的正确性
                     String login = EncryptOrDecryptUtil.doAES(msg.getContent(),k, Cipher.DECRYPT_MODE);
                     log.info("解密出客户端登录数据:{}",login);
-                    if (!("login").equals(login)){
+                    if (("login").equals(login)){
+                        log.info("客户端{}验证通过，加入连接列表",ctx.name());
+                        NettySocketHolder.put(msg.getGatewayId(), ctx.channel());
+                        //向客户端发送认证成功的消息，这里一定要先发消息再替换handler
+                        ctx.writeAndFlush(new SocketMsg().setType(MsgType.LOGIN_SUCCESS_VALUE));
+                        //用AES加解密替换掉默认的编解码器
+                        ctx.pipeline().replace(ctx.pipeline().get("decoder"),"decoder",new JsonDecoderAES());
+                        ctx.pipeline().replace(ctx.pipeline().get("encoder"),"encoder",new JsonEncoderAES());
+                        ctx.pipeline().addFirst(new IdleStateHandler(5,0, 0, TimeUnit.SECONDS));
+                    }else {
                         log.info("非法客户端，关闭连接");
-                        ctx.channel().close();
-                        AesKeyMap.remove(ctx.channel());
+                        closeChannel(ctx);
                     }
-                    log.info("客户端{}验证通过，加入连接列表",ctx.name());
-                    NettySocketHolder.put(msg.getGatewayId(), ctx.channel());
                     break;
                 default:break;
             }
         }catch (Exception e){
             e.printStackTrace();
             log.error("客户端认证出错{}",e.getMessage());
-            ctx.channel().close();
+            closeChannel(ctx);
         }
         ctx.fireChannelRead(message);
         ReferenceCountUtil.release(msg);
+    }
+
+    private void closeChannel(ChannelHandlerContext ctx){
+        AesKeyMap.remove(ctx.channel());
+        ctx.channel().close();
     }
 }

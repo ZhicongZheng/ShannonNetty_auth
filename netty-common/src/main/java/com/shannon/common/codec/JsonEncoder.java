@@ -1,4 +1,4 @@
-package com.shannon.common.json;
+package com.shannon.common.codec;
 
 import com.alibaba.fastjson.JSONObject;
 import io.netty.buffer.ByteBuf;
@@ -6,6 +6,10 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 
+/**
+ * 默认json编码器
+ * @author zzc
+ */
 public class JsonEncoder extends MessageToByteEncoder<Object> {
 
     @Override

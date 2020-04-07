@@ -2,7 +2,7 @@ package com.shannon.server.handler;
 
 import com.shannon.common.enums.MsgType;
 import com.shannon.common.model.SocketMsg;
-import com.shannon.server.util.AesKeyMap;
+import com.shannon.common.util.AesKeyMap;
 import com.shannon.server.util.NettySocketHolder;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -45,9 +45,9 @@ public class ServerHeartHandler extends ChannelInboundHandlerAdapter {
             if (idleStateEvent.state() == IdleState.READER_IDLE) {
                 if(unRecPingTimes >= MAX_UN_REC_PING_TIMES){
                     // 连续超过N次未收到客户端的ping消息，那么关闭该通道，等待client重连
-                    ctx.channel().close();
-                    NettySocketHolder.remove(ctx.channel());
-                    AesKeyMap.remove(ctx.channel());
+                    //ctx.channel().close();
+                    //NettySocketHolder.remove(ctx.channel());
+                    //AesKeyMap.remove(ctx.channel());
                 }else{
                     // 失败计数器加1
                     unRecPingTimes++;

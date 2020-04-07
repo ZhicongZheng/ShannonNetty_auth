@@ -21,7 +21,8 @@ public enum MsgType {
     //推送数据
     PUSH_DATA(7),
     //服务端主动刷新秘钥
-    REFRESH_KEY(8);
+    REFRESH_KEY(8),
+    LOGIN_SUCCESS(9);
 
 
     private final int value;
@@ -34,6 +35,7 @@ public enum MsgType {
     public static final int UPLOAD_DATA_VALUE = 6;
     public static final int PUSH_DATA_VALUE = 7;
     public static final int REFRESH_KEY_VALUE = 8;
+    public static final int LOGIN_SUCCESS_VALUE = 9;
 
 
 
@@ -52,6 +54,7 @@ public enum MsgType {
             case 6: return UPLOAD_DATA;
             case 7: return PUSH_DATA;
             case 8: return REFRESH_KEY;
+            case 9: return LOGIN_SUCCESS;
             default: return null;
         }
     }
