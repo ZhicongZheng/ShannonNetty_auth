@@ -1,7 +1,9 @@
 package com.shannon.client.handler;
 
 import com.shannon.client.tcpclient.ShannonNettyClient;
+import com.shannon.common.codec.JsonDecoder;
 import com.shannon.common.codec.JsonDecoderAES;
+import com.shannon.common.codec.JsonEncoder;
 import com.shannon.common.codec.JsonEncoderAES;
 import com.shannon.common.enums.MsgType;
 import com.shannon.common.model.EcKeys;
@@ -90,7 +92,7 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg> {
             case MsgType.AUTH_BACK_VALUE:
                 log.info("收到服务端公钥，开始秘钥协商:{}",msg.getContent());
                 String key = EncryptOrDecryptUtil.ecdhKey(ecKeys.getPriKey(),msg.getContent());
-                AesKeyMap.put(ctx.channel(),key);
+                AesKeyMap.put(ctx.channel(),key );
                 log.info("客户端秘钥协商完成，开始验证秘钥正确性,秘钥为:{}",key);
                 String content = EncryptOrDecryptUtil.doAES("login",key, Cipher.ENCRYPT_MODE);
                 SocketMsg login = new SocketMsg()
@@ -103,12 +105,14 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg> {
                 ctx.pipeline().replace(ctx.pipeline().get("decoder"),"decoder",new JsonDecoderAES());
                 ctx.pipeline().replace(ctx.pipeline().get("encoder"),"encoder",new JsonEncoderAES());
                 //登录成功之后，才加入心跳机制
-                ctx.pipeline().addFirst(new IdleStateHandler(0,5, 0, TimeUnit.SECONDS));
+                ctx.pipeline().addFirst("idle",new IdleStateHandler(0,5, 0, TimeUnit.SECONDS));
                 break;
             case MsgType.REFRESH_KEY_VALUE:
                 log.info("服务端主动刷新秘钥");
-
-                ctx.writeAndFlush(this.clientInit());
+                ctx.pipeline().replace(ctx.pipeline().get("decoder"),"decoder",new JsonDecoder());
+                ctx.pipeline().replace(ctx.pipeline().get("encoder"),"encoder",new JsonEncoder());
+                ctx.pipeline().remove("idle");
+                ctx.writeAndFlush(clientInit());
                 break;
             default:break;
         }

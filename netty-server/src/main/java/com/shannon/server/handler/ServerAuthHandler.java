@@ -64,7 +64,7 @@ public class ServerAuthHandler extends ChannelInboundHandlerAdapter {
                         //用AES加解密替换掉默认的编解码器
                         ctx.pipeline().replace(ctx.pipeline().get("decoder"),"decoder",new JsonDecoderAES());
                         ctx.pipeline().replace(ctx.pipeline().get("encoder"),"encoder",new JsonEncoderAES());
-                        ctx.pipeline().addFirst(new IdleStateHandler(5,0, 0, TimeUnit.SECONDS));
+                        ctx.pipeline().addFirst("idle",new IdleStateHandler(5,0, 0, TimeUnit.SECONDS));
                     }else {
                         log.info("非法客户端，关闭连接");
                         closeChannel(ctx);

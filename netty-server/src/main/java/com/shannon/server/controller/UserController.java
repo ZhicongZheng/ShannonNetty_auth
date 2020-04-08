@@ -1,5 +1,7 @@
 package com.shannon.server.controller;
 
+import com.shannon.common.codec.JsonDecoder;
+import com.shannon.common.codec.JsonEncoder;
 import com.shannon.common.enums.MsgType;
 import com.shannon.common.model.EcKeys;
 import com.shannon.common.model.SocketMsg;
@@ -50,6 +52,10 @@ public class UserController {
         future.addListener((ChannelFutureListener) future1 -> {
             if (future1.isSuccess()){
                 log.info("发送刷新秘钥消息成功");
+                //把AES加解密的编解码器替换为默认的json编解码器，去掉心跳，让网关重新执行认证
+                channel.pipeline().remove("idle");
+                channel.pipeline().replace("decoder","decoder",new JsonDecoder());
+                channel.pipeline().replace("encoder","encoder",new JsonEncoder());
             }else {
                 log.info("发送刷新秘钥消息失败");
             }
