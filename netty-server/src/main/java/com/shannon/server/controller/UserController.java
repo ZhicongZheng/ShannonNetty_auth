@@ -18,13 +18,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 用户接口
  * @author zzc
  */
 @Slf4j
-@Api(tags = {"用户相关API"})
+@Api(value = "用户相关API")
 @RestController
 @RequestMapping("/user")
 public class UserController {
@@ -39,8 +43,8 @@ public class UserController {
         }
     }
 
-    @GetMapping("refreshKey")
-    @ApiModelProperty(value = "刷新秘钥")
+    @GetMapping("/refreshKey")
+    @ApiOperation(value = "刷新秘钥")
     public void refreshKey(){
 
         //首先验证用户是否拥有网关
@@ -60,6 +64,21 @@ public class UserController {
                 log.info("发送刷新秘钥消息失败");
             }
         });
+    }
+
+    @GetMapping("/getGwList")
+    @ApiOperation("获取网关列表")
+    public List<Map<String,String>> getGwList(){
+        List<Map<String,String>> result = new ArrayList<>();
+
+        NettySocketHolder.getMap().forEach((k,v)->{
+            Map<String,String> map = new HashMap<>(4);
+            map.put("gwid",v.remoteAddress().toString());
+            map.put("gwName","测试设备");
+            map.put("status","在线");
+            result.add(map);
+        });
+        return result;
     }
 
 }

@@ -52,7 +52,7 @@ public class ServerHeartHandler extends ChannelInboundHandlerAdapter {
                     // 失败计数器加1
                     unRecPingTimes++;
                 }
-                log.info("向客户端发送心跳...");
+                //log.info("向客户端发送心跳...");
                 ctx.writeAndFlush(PING).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
             }
         }
@@ -65,7 +65,7 @@ public class ServerHeartHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object message) {
         SocketMsg msg = (SocketMsg) message;
         if (msg.getType()==MsgType.PING_VALUE){
-            log.info("收到客户端的心跳");
+            //log.info("收到客户端的心跳");
             ctx.writeAndFlush(PONG);
             if (unRecPingTimes>0){
                 unRecPingTimes--;

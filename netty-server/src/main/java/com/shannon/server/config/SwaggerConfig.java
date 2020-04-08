@@ -2,6 +2,7 @@ package com.shannon.server.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.bind.annotation.RestController;
 import springfox.documentation.builders.ApiInfoBuilder;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
@@ -23,7 +24,7 @@ public class SwaggerConfig {
                 .apiInfo(apiInfo())
                 .select()
                 //扫描要用到Swagger2的包
-                .apis(RequestHandlerSelectors.basePackage("com.shannon.server"))
+                .apis(RequestHandlerSelectors.withClassAnnotation(RestController.class))
                 .paths(PathSelectors.any())
                 .build();
     }

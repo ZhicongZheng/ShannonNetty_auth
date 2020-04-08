@@ -57,7 +57,7 @@ public class ServerAuthHandler extends ChannelInboundHandlerAdapter {
                     String login = EncryptOrDecryptUtil.doAES(msg.getContent(),k, Cipher.DECRYPT_MODE);
                     log.info("解密出客户端登录数据:{}",login);
                     if (("login").equals(login)){
-                        log.info("客户端{}验证通过，加入连接列表",ctx.name());
+                        log.info("网关【{}】验证通过，加入连接列表",msg.getGatewayId());
                         NettySocketHolder.put(msg.getGatewayId(), ctx.channel());
                         //向客户端发送认证成功的消息，这里一定要先发消息再替换handler
                         ctx.writeAndFlush(new SocketMsg().setType(MsgType.LOGIN_SUCCESS_VALUE));

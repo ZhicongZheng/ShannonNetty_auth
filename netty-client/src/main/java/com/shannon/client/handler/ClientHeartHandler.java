@@ -47,7 +47,7 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg> {
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent idleStateEvent = (IdleStateEvent) evt;
             if (idleStateEvent.state() == IdleState.WRITER_IDLE) {
-                log.info("向服务端发送心跳...");
+                //log.info("向服务端发送心跳...");
                 ctx.writeAndFlush(PING).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
             }
 
@@ -86,7 +86,7 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg> {
         //从服务端收到消息时被调用
         switch (msg.getType()){
             case MsgType.PING_VALUE:
-                log.info("收到服务端的心跳");
+                //log.info("收到服务端的心跳");
                 ctx.writeAndFlush(PONG);
                 break;
             case MsgType.AUTH_BACK_VALUE:
