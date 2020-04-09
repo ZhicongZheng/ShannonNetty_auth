@@ -4,15 +4,15 @@ import com.shannon.common.codec.JsonDecoder;
 import com.shannon.common.codec.JsonEncoder;
 import com.shannon.common.enums.MsgType;
 import com.shannon.common.model.EcKeys;
+import com.shannon.common.model.Gateway;
 import com.shannon.common.model.SocketMsg;
 import com.shannon.common.model.User;
-import com.shannon.server.util.NettySocketHolder;
+import com.shannon.common.util.NettySocketHolder;
 import com.shannon.server.util.SpringBeanFactory;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiModelProperty;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -45,10 +45,14 @@ public class UserController {
 
     @GetMapping("/refreshKey")
     @ApiOperation(value = "刷新秘钥")
-    public void refreshKey(){
+    public void refreshKey(@RequestParam String gwId){
 
         //首先验证用户是否拥有网关
-        Channel channel = NettySocketHolder.get("1");
+        Gateway gw = NettySocketHolder.get(gwId);
+        if (gw==null){
+            throw new IllegalArgumentException("网关不在线");
+        }
+        Channel channel = gw.getChannel();
         EcKeys ecKeys = SpringBeanFactory.getBean("EcKeys",EcKeys.class);
         SocketMsg msg = new SocketMsg()
                 .setType(MsgType.REFRESH_KEY_VALUE).setContent(ecKeys.getPubKey());
@@ -73,8 +77,8 @@ public class UserController {
 
         NettySocketHolder.getMap().forEach((k,v)->{
             Map<String,String> map = new HashMap<>(4);
-            map.put("gwid",v.remoteAddress().toString());
-            map.put("gwName","测试设备");
+            map.put("gwid",v.getGwId());
+            map.put("gwName",v.getGwName());
             map.put("status","在线");
             result.add(map);
         });

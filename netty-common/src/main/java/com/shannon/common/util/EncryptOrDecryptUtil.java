@@ -227,7 +227,7 @@ public class EncryptOrDecryptUtil {
      * @param content 加密数据
      * @param priKey 私钥
      */
-    private static String sign(String content, String priKey) {
+    public static String sign(String content, String priKey) {
         try {
             byte[] keyBytes = Base64.getMimeDecoder().decode(priKey.getBytes(StandardCharsets.UTF_8));
             byte[] contentBytes = Base64.getMimeDecoder().decode(content.getBytes(StandardCharsets.UTF_8));
@@ -364,7 +364,7 @@ public class EncryptOrDecryptUtil {
      * @param signData 签名
      * @return Boolean
      */
-    private static boolean verify(String textContent, String pubKey, String signData) {
+    public static boolean verify(String textContent, String pubKey, String signData) {
         try {
             byte[] keyBytes = Base64.getMimeDecoder().decode(pubKey.getBytes(StandardCharsets.UTF_8));
             byte[] contentBytes = Base64.getMimeDecoder().decode(textContent.getBytes(StandardCharsets.UTF_8));

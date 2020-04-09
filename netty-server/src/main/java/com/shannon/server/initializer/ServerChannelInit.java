@@ -4,6 +4,7 @@ import com.shannon.common.codec.JsonDecoder;
 import com.shannon.common.codec.JsonEncoder;
 import com.shannon.server.handler.ServerAuthHandler;
 import com.shannon.server.handler.ServerHeartHandler;
+import com.shannon.server.handler.ServerReceiveHandler;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -35,5 +36,7 @@ public class ServerChannelInit extends ChannelInitializer<Channel> {
         p.addLast(new ServerAuthHandler());
         //心跳handler
         p.addLast(new ServerHeartHandler());
+        //数据处理handler
+        p.addLast(new ServerReceiveHandler());
     }
 }

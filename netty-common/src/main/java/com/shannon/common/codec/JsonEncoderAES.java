@@ -1,9 +1,8 @@
 package com.shannon.common.codec;
 
-import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
-import com.shannon.common.util.AesKeyMap;
 import com.shannon.common.util.EncryptOrDecryptUtil;
+import com.shannon.common.util.NettySocketHolder;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -26,8 +25,8 @@ public class JsonEncoderAES extends MessageToByteEncoder<Object> {
             e.printStackTrace();
             System.out.println("编码错误"+e);
         }
-
+        String key = NettySocketHolder.get(ctx.channel()).getKey();
         out.writeBytes(Unpooled.wrappedBuffer(EncryptOrDecryptUtil
-                .doAES(json, AesKeyMap.get(ctx.channel()), Cipher.ENCRYPT_MODE).getBytes(StandardCharsets.UTF_8)));
+                .doAES(json, key, Cipher.ENCRYPT_MODE).getBytes(StandardCharsets.UTF_8)));
     }
 }

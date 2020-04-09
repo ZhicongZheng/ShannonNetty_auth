@@ -30,8 +30,6 @@ public class ShannonNettyClient {
     @Value("${netty.server.host}")
     private String host;
 
-    private SocketChannel socketChannel;
-
     @PostConstruct
     public void start() throws InterruptedException {
         Bootstrap bootstrap = new Bootstrap();
@@ -64,7 +62,7 @@ public class ShannonNettyClient {
             }
         });
 
-        socketChannel = (SocketChannel) future.channel();
+        SocketChannel socketChannel = (SocketChannel) future.channel();
     }
 
 }

@@ -2,8 +2,7 @@ package com.shannon.server.handler;
 
 import com.shannon.common.enums.MsgType;
 import com.shannon.common.model.SocketMsg;
-import com.shannon.common.util.AesKeyMap;
-import com.shannon.server.util.NettySocketHolder;
+import com.shannon.common.util.NettySocketHolder;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -21,8 +20,8 @@ import org.springframework.stereotype.Component;
 @Component
 public class ServerHeartHandler extends ChannelInboundHandlerAdapter {
 
-    private static final SocketMsg PING = new SocketMsg().setId(1).setType(MsgType.PING_VALUE).setContent("ping");
-    private static final SocketMsg PONG = new SocketMsg().setId(1).setType(MsgType.PONG_VALUE).setContent("pong");
+    private static final SocketMsg<String> PING = new SocketMsg<String>().setId(1).setType(MsgType.PING_VALUE).setContent("ping");
+    private static final SocketMsg<String> PONG = new SocketMsg<String>().setId(1).setType(MsgType.PONG_VALUE).setContent("pong");
     /**失败计数器：未收到客户端发送的ping请求*/
     private int unRecPingTimes = 0;
     /**定义客户端没有收到服务端的pong消息的最大次数*/
@@ -32,7 +31,6 @@ public class ServerHeartHandler extends ChannelInboundHandlerAdapter {
     public void channelInactive(ChannelHandlerContext ctx) {
         log.info("客户端【{}】断开连接",ctx.channel().remoteAddress());
         NettySocketHolder.remove(ctx.channel());
-        AesKeyMap.remove(ctx.channel());
     }
 
     /**

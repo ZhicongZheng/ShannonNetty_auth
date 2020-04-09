@@ -9,12 +9,13 @@ import lombok.experimental.Accessors;
  */
 @Data
 @Accessors(chain = true)
-public class SocketMsg {
+public class SocketMsg<T> {
 
     private long id;
     private int type;
     private String gatewayId;
-    private String content;
+    private String sign;
+    private T content;
 
 
 }
