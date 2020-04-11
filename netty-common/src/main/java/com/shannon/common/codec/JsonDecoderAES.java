@@ -7,6 +7,7 @@ import com.shannon.common.util.NettySocketHolder;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.crypto.Cipher;
 import java.nio.charset.StandardCharsets;
@@ -16,6 +17,7 @@ import java.util.List;
  * 使用AES解密的json解码器
  * @author zzc
  */
+@Slf4j
 public class JsonDecoderAES extends ByteToMessageDecoder {
 
     @Override
@@ -26,9 +28,12 @@ public class JsonDecoderAES extends ByteToMessageDecoder {
             byte[] bytes = new byte[len];
             in.readBytes(bytes);
             String key = NettySocketHolder.get(ctx.channel()).getKey();
-            String msgByAes = EncryptOrDecryptUtil
-                    .doAES(new String(bytes,StandardCharsets.UTF_8), key, Cipher.DECRYPT_MODE);
-            msg = JSON.parseObject(msgByAes).toJavaObject(SocketMsg.class);
+            String cipherText = new String(bytes,StandardCharsets.UTF_8);
+            log.info("接收到密文为:{}",cipherText);
+            long start = System.currentTimeMillis();
+            String json = EncryptOrDecryptUtil.doAES(cipherText, key, Cipher.DECRYPT_MODE);
+            log.info("解密耗时：{}，解密出的明文为:{}",System.currentTimeMillis()-start,json);
+            msg = JSON.parseObject(json).toJavaObject(SocketMsg.class);
         }catch (Exception e){
             e.printStackTrace();
             System.out.println("解码错误"+e);

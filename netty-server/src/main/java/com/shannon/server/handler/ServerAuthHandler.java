@@ -44,17 +44,18 @@ public class ServerAuthHandler extends ChannelInboundHandlerAdapter {
                         closeChannel(ctx);
                         return;
                     }
+                    long start = System.currentTimeMillis();
                     log.info("2.服务端接收到秘钥协商请求,客户端公钥为：{}",clientPubKey);
                     EcKeys ecKeys = SpringBeanFactory.getBean("EcKeys",EcKeys.class);
                     SocketMsg<String> publicKeyStr = new SocketMsg<String>()
                             .setId(1).setType(MsgType.AUTH_BACK_VALUE).setContent(ecKeys.getPubKey());
 
                     String key = EncryptOrDecryptUtil.ecdhKey(ecKeys.getPriKey(),clientPubKey);
-                    log.info("3.服务端协商出加密秘钥：{}",key);
+                    log.info("3. 服务端秘钥协商完成，耗时：{}ms，开始验证秘钥正确性,加密秘钥为:{}",System.currentTimeMillis()-start,key);
                     //将改秘钥加入秘钥库
                     Gateway gw = new Gateway()
                             .setGwId(msg.getGatewayId())
-                            .setGwName("name")
+                            .setGwName("第一套")
                             .setChannel(ctx.channel())
                             .setKey(key)
                             .setPubKey(clientPubKey);

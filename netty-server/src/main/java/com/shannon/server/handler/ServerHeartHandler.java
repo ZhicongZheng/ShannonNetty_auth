@@ -43,9 +43,9 @@ public class ServerHeartHandler extends ChannelInboundHandlerAdapter {
             if (idleStateEvent.state() == IdleState.READER_IDLE) {
                 if(unRecPingTimes >= MAX_UN_REC_PING_TIMES){
                     // 连续超过N次未收到客户端的ping消息，那么关闭该通道，等待client重连
-                    //ctx.channel().close();
-                    //NettySocketHolder.remove(ctx.channel());
-                    //AesKeyMap.remove(ctx.channel());
+                    log.info("网关3次心跳没有应答，判断下线，关闭通道");
+                    ctx.channel().close();
+                    NettySocketHolder.remove(ctx.channel());
                 }else{
                     // 失败计数器加1
                     unRecPingTimes++;

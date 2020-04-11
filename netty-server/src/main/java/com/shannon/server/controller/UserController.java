@@ -45,10 +45,10 @@ public class UserController {
 
     @GetMapping("/refreshKey")
     @ApiOperation(value = "刷新秘钥")
-    public void refreshKey(@RequestParam String gwId){
+    public void refreshKey(){
 
         //首先验证用户是否拥有网关
-        Gateway gw = NettySocketHolder.get(gwId);
+        Gateway gw = NettySocketHolder.get("1");
         if (gw==null){
             throw new IllegalArgumentException("网关不在线");
         }
@@ -79,7 +79,7 @@ public class UserController {
             Map<String,String> map = new HashMap<>(4);
             map.put("gwid",v.getGwId());
             map.put("gwName",v.getGwName());
-            map.put("status","在线");
+            map.put("status",v.getStatus());
             result.add(map);
         });
         return result;

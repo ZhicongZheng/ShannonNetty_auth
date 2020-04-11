@@ -16,9 +16,11 @@ public class EcKeysConfig {
 
     @Bean("EcKeys")
     public EcKeys ecKeysInit(){
+        long start = System.currentTimeMillis();
         EcKeys ecKeys = EncryptOrDecryptUtil.getEcKeys();
         log.info("服务端初始化公钥serPubKey【{}】",ecKeys.getPubKey());
         log.info("服务端初始化私钥serPriKey【{}】",ecKeys.getPriKey());
+        log.info("服务端秘钥生成耗时：{}ms",System.currentTimeMillis()-start);
         return ecKeys;
     }
 }

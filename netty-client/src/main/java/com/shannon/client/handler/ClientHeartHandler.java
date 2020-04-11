@@ -91,6 +91,7 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<St
                 ctx.writeAndFlush(PONG);
                 break;
             case MsgType.AUTH_BACK_VALUE:
+                long start = System.currentTimeMillis();
                 log.info("4.客户端开始秘钥协商，收到服务端公钥为:{}",msg.getContent());
                 String key = EncryptOrDecryptUtil.ecdhKey(ecKeys.getPriKey(), (String) msg.getContent());
                 Gateway gw = new Gateway()
@@ -98,7 +99,7 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<St
                         .setKey(key)
                         .setChannel(ctx.channel());
                 NettySocketHolder.put("1",gw);
-                log.info("5. 客户端秘钥协商完成，开始验证秘钥正确性,加密秘钥为:{}",key);
+                log.info("5. 客户端秘钥协商完成，耗时：{}ms，开始验证秘钥正确性,加密秘钥为:{}",System.currentTimeMillis()-start,key);
                 String content = EncryptOrDecryptUtil.doAES("login",key, Cipher.ENCRYPT_MODE);
                 SocketMsg<String> login = new SocketMsg<String>()
                         .setGatewayId("1").setType(MsgType.AUTH_CHECK_VALUE).setContent(content);
@@ -119,7 +120,7 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<St
                             .setContent(data)
                             .setSign(EncryptOrDecryptUtil.sign(data,ecKeys.getPriKey()));
                     ctx.writeAndFlush(sendData);
-                    TimeUnit.SECONDS.sleep(5);
+                    TimeUnit.SECONDS.sleep(2);
                 }
 
                 break;
@@ -135,9 +136,11 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<St
     }
 
     private SocketMsg<String> clientInit(){
+        long start = System.currentTimeMillis();
         ecKeys = EncryptOrDecryptUtil.getEcKeys();
-        log.info("【客户端初始化公钥cliPubKey】" + ecKeys.getPubKey());
-        log.info("【客户端初始化私钥cliPriKey】" + ecKeys.getPriKey());
+        log.info("客户端初始化公钥cliPubKey【{}】",ecKeys.getPubKey());
+        log.info("客户端初始化私钥cliPriKey【{}】",ecKeys.getPriKey());
+        log.info("客户端秘钥生成耗时：{}",System.currentTimeMillis()-start);
         log.info("1.客户端发起秘钥协商请求");
         return new SocketMsg<String>().setGatewayId("1").setType(MsgType.AUTH_VALUE).setContent(ecKeys.getPubKey());
     }
