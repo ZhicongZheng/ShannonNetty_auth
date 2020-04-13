@@ -34,6 +34,10 @@ import java.util.concurrent.TimeUnit;
 public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<String>> {
     /** ECC的公钥和私钥*/
     private static EcKeys ecKeys =null;
+    /**服务端公钥*/
+    private static String ServerPubKey;
+    /**客户端AES加密秘钥*/
+    private static String key;
     @Value("gatewayId")
     private String gatewayId;
     @Autowired
@@ -91,19 +95,9 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<St
                 ctx.writeAndFlush(PONG);
                 break;
             case MsgType.AUTH_BACK_VALUE:
-                long start = System.currentTimeMillis();
-                log.info("4.客户端开始秘钥协商，收到服务端公钥为:{}",msg.getContent());
-                String key = EncryptOrDecryptUtil.ecdhKey(ecKeys.getPriKey(), (String) msg.getContent());
-                Gateway gw = new Gateway()
-                        .setGwId("1")
-                        .setKey(key)
-                        .setChannel(ctx.channel());
-                NettySocketHolder.put("1",gw);
-                log.info("5. 客户端秘钥协商完成，耗时：{}ms，开始验证秘钥正确性,加密秘钥为:{}",System.currentTimeMillis()-start,key);
-                String content = EncryptOrDecryptUtil.doAES("login",key, Cipher.ENCRYPT_MODE);
-                SocketMsg<String> login = new SocketMsg<String>()
-                        .setGatewayId("1").setType(MsgType.AUTH_CHECK_VALUE).setContent(content);
-                ctx.writeAndFlush(login);
+                ServerPubKey = (String) msg.getContent();
+                this.clientEcdh(ctx);
+                ctx.writeAndFlush(createLogin());
                 break;
             case MsgType.LOGIN_SUCCESS_VALUE:
                 log.info("8. 网关登陆成功，后续数据将使用AES进行加解密");
@@ -143,6 +137,24 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<St
         log.info("客户端秘钥生成耗时：{}",System.currentTimeMillis()-start);
         log.info("1.客户端发起秘钥协商请求");
         return new SocketMsg<String>().setGatewayId("1").setType(MsgType.AUTH_VALUE).setContent(ecKeys.getPubKey());
+    }
+
+    private void clientEcdh(ChannelHandlerContext ctx){
+        long start = System.currentTimeMillis();
+        log.info("4.客户端开始秘钥协商，收到服务端公钥为:{}",ServerPubKey);
+        key = EncryptOrDecryptUtil.ecdhKey(ecKeys.getPriKey(), ServerPubKey);
+        Gateway gw = new Gateway()
+                .setGwId("1")
+                .setKey(key)
+                .setChannel(ctx.channel());
+        NettySocketHolder.put("1",gw);
+        log.info("5. 客户端秘钥协商完成，耗时：{}ms，开始验证秘钥正确性,加密秘钥为:{}",System.currentTimeMillis()-start,key);
+    }
+
+    private SocketMsg<String> createLogin(){
+        String content = EncryptOrDecryptUtil.doAES("login",key, Cipher.ENCRYPT_MODE);
+        return new SocketMsg<String>()
+                .setGatewayId("1").setType(MsgType.AUTH_CHECK_VALUE).setContent(content);
     }
 
 }
