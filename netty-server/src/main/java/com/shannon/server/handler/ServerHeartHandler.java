@@ -50,7 +50,7 @@ public class ServerHeartHandler extends ChannelInboundHandlerAdapter {
                     // 失败计数器加1
                     unRecPingTimes++;
                 }
-                //log.info("向客户端发送心跳...");
+                log.info("向客户端发送心跳...");
                 ctx.writeAndFlush(PING).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
             }
         }
@@ -62,14 +62,17 @@ public class ServerHeartHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object message) {
         SocketMsg msg = (SocketMsg) message;
-        if (msg.getType()==MsgType.PING_VALUE){
-            //log.info("收到客户端的心跳");
-            ctx.writeAndFlush(PONG);
-            if (unRecPingTimes>0){
-                unRecPingTimes--;
-            }
-        }else {
-            ctx.fireChannelRead(message);
+        switch (msg.getType()){
+            case MsgType.PING_VALUE:
+                log.info("收到客户端的心跳");
+                ctx.writeAndFlush(PONG);
+                break;
+            case MsgType.PONG_VALUE:
+                if (unRecPingTimes>0){
+                    unRecPingTimes--;
+                }
+                break;
+            default:ctx.fireChannelRead(message);break;
         }
         ReferenceCountUtil.release(msg);
     }

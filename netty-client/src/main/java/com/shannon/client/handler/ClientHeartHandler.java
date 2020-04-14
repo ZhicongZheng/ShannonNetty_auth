@@ -1,6 +1,7 @@
 package com.shannon.client.handler;
 
 import com.shannon.client.tcpclient.ShannonNettyClient;
+import com.shannon.client.util.SpringBeanFactory;
 import com.shannon.common.codec.JsonDecoder;
 import com.shannon.common.codec.JsonDecoderAES;
 import com.shannon.common.codec.JsonEncoder;
@@ -42,6 +43,10 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<St
     private String gatewayId;
     @Autowired
     private ShannonNettyClient nettyClient;
+    /**失败计数器：未收到客户端发送的ping请求*/
+    private int unRecPingTimes = 0;
+    /**定义客户端没有收到服务端的pong消息的最大次数*/
+    private static final int MAX_UN_REC_PING_TIMES = 3;
 
     private static final SocketMsg<String> PING =new SocketMsg<String>().setGatewayId("1").setType(MsgType.PING_VALUE).setContent("ping");
 
@@ -52,7 +57,16 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<St
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent idleStateEvent = (IdleStateEvent) evt;
             if (idleStateEvent.state() == IdleState.WRITER_IDLE) {
-                //log.info("向服务端发送心跳...");
+                if(unRecPingTimes >= MAX_UN_REC_PING_TIMES){
+                    log.info("服务器3次心跳没有应答，判断下线，关闭通道");
+                    ctx.channel().close();
+                    reConnect(ctx);
+                    return;
+                }else{
+                    // 失败计数器加1
+                    unRecPingTimes++;
+                }
+                log.info("向服务端发送心跳...");
                 ctx.writeAndFlush(PING).addListener(ChannelFutureListener.CLOSE_ON_FAILURE);
             }
 
@@ -72,14 +86,8 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<St
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         //如果运行过程中服务端挂了,执行重连机制
-        EventLoop eventLoop = ctx.channel().eventLoop();
-        eventLoop.schedule(() -> {
-            try {
-                nettyClient.start();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }, 10L, TimeUnit.SECONDS);
+        log.info("客户端连接断开");
+        reConnect(ctx);
         super.channelInactive(ctx);
     }
 
@@ -91,8 +99,13 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<St
         //从服务端收到消息时被调用
         switch (msg.getType()){
             case MsgType.PING_VALUE:
-                //log.info("收到服务端的心跳");
+                log.info("收到服务端的心跳");
                 ctx.writeAndFlush(PONG);
+                break;
+            case MsgType.PONG_VALUE:
+                if (unRecPingTimes>0){
+                    unRecPingTimes--;
+                }
                 break;
             case MsgType.AUTH_BACK_VALUE:
                 ServerPubKey = (String) msg.getContent();
@@ -106,7 +119,7 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<St
                 ctx.pipeline().replace(ctx.pipeline().get("encoder"),"encoder",new JsonEncoderAES());
                 //登录成功之后，才加入心跳机制
                 ctx.pipeline().addFirst("idle",new IdleStateHandler(0,5, 0, TimeUnit.SECONDS));
-                for (int i=0;i<10;i++){
+                for (int i=0;i<5;i++){
                     String data = "测试加密数据";
                     SocketMsg<String> sendData = new SocketMsg<String>()
                             .setGatewayId("1")
@@ -155,6 +168,18 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<St
         String content = EncryptOrDecryptUtil.doAES("login",key, Cipher.ENCRYPT_MODE);
         return new SocketMsg<String>()
                 .setGatewayId("1").setType(MsgType.AUTH_CHECK_VALUE).setContent(content);
+    }
+
+    private void reConnect(ChannelHandlerContext ctx){
+        EventLoop eventLoop = ctx.channel().eventLoop();
+        eventLoop.schedule(() -> {
+            try {
+                ShannonNettyClient nettyClient = SpringBeanFactory.getBean("ShannonNettyClient",ShannonNettyClient.class);
+                nettyClient.start();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }, 1L, TimeUnit.SECONDS);
     }
 
 }

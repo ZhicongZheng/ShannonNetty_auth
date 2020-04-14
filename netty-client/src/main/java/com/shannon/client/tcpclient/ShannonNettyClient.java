@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * @author zzc
  */
 @Slf4j
-@Component
+@Component(value = "ShannonNettyClient")
 public class ShannonNettyClient {
     private EventLoopGroup group = new NioEventLoopGroup();
     @Value("${netty.server.port}")
@@ -41,7 +41,7 @@ public class ShannonNettyClient {
                 .option(ChannelOption.SO_KEEPALIVE, true)
                 .option(ChannelOption.TCP_NODELAY, true);
 
-        ChannelFuture future = bootstrap.connect().sync();
+        ChannelFuture future = bootstrap.connect();
         if (future.isSuccess()) {
             log.info("启动 Netty客户端 成功");
         }
@@ -61,8 +61,6 @@ public class ShannonNettyClient {
                 }, 30, TimeUnit.SECONDS);
             }
         });
-
-        SocketChannel socketChannel = (SocketChannel) future.channel();
     }
 
 }

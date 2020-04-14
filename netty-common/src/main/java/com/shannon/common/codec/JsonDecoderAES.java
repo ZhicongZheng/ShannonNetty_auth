@@ -29,10 +29,10 @@ public class JsonDecoderAES extends ByteToMessageDecoder {
             in.readBytes(bytes);
             String key = NettySocketHolder.get(ctx.channel()).getKey();
             String cipherText = new String(bytes,StandardCharsets.UTF_8);
-            log.info("接收到密文为:{}",cipherText);
+            //log.info("接收到密文为:{}",cipherText);
             long start = System.currentTimeMillis();
             String json = EncryptOrDecryptUtil.doAES(cipherText, key, Cipher.DECRYPT_MODE);
-            log.info("解密耗时：{}，解密出的明文为:{}",System.currentTimeMillis()-start,json);
+            //log.info("解密耗时：{}，解密出的明文为:{}",System.currentTimeMillis()-start,json);
             msg = JSON.parseObject(json).toJavaObject(SocketMsg.class);
         }catch (Exception e){
             e.printStackTrace();

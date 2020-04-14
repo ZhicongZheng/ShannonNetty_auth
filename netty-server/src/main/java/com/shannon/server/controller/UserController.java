@@ -45,16 +45,16 @@ public class UserController {
 
     @GetMapping("/refreshKey")
     @ApiOperation(value = "刷新秘钥")
-    public void refreshKey(){
+    public void refreshKey(@RequestParam String gwId){
 
         //首先验证用户是否拥有网关
-        Gateway gw = NettySocketHolder.get("1");
+        Gateway gw = NettySocketHolder.get(gwId);
         if (gw==null){
             throw new IllegalArgumentException("网关不在线");
         }
         Channel channel = gw.getChannel();
         EcKeys ecKeys = SpringBeanFactory.getBean("EcKeys",EcKeys.class);
-        SocketMsg msg = new SocketMsg()
+        SocketMsg<String> msg = new SocketMsg<String>()
                 .setType(MsgType.REFRESH_KEY_VALUE).setContent(ecKeys.getPubKey());
         ChannelFuture future = channel.writeAndFlush(msg);
         future.addListener((ChannelFutureListener) future1 -> {
