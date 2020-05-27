@@ -15,6 +15,9 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import io.netty.channel.socket.SocketChannel;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -62,5 +65,4 @@ public class ShannonNettyClient {
             }
         });
     }
-
 }

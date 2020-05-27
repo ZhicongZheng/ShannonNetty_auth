@@ -64,7 +64,7 @@ public class ServerHeartHandler extends ChannelInboundHandlerAdapter {
         SocketMsg msg = (SocketMsg) message;
         switch (msg.getType()){
             case MsgType.PING_VALUE:
-                log.info("收到客户端的心跳");
+                log.info("收到客户端的心跳,此时连接的客户端有{}个",NettySocketHolder.getMap().size());
                 ctx.writeAndFlush(PONG);
                 break;
             case MsgType.PONG_VALUE:

@@ -28,10 +28,10 @@ public class JsonEncoderAES extends MessageToByteEncoder<Object> {
             System.out.println("编码错误"+e);
         }
         String key = NettySocketHolder.get(ctx.channel()).getKey();
-        //log.info("加密前的明文为:{}",json);
+        log.info("加密前的明文为:{}",json);
         long start = System.currentTimeMillis();
         String cipherText= EncryptOrDecryptUtil.doAES(json, key, Cipher.ENCRYPT_MODE);
-        //log.info("加密耗时：{}，加密后的明文为:{}",System.currentTimeMillis()-start,cipherText);
+        log.info("加密耗时：{}，加密后的明文为:{}",System.currentTimeMillis()-start,cipherText);
         out.writeBytes(Unpooled.wrappedBuffer(cipherText.getBytes(StandardCharsets.UTF_8)));
     }
 }

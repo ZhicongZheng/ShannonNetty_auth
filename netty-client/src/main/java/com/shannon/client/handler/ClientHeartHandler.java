@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<String>> {
+
     /** ECC的公钥和私钥*/
     private static EcKeys ecKeys =null;
     /**服务端公钥*/
@@ -40,7 +41,7 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<St
     /**客户端AES加密秘钥*/
     private static String key;
     @Value("gatewayId")
-    private String gatewayId;
+    public String gatewayId;
     @Autowired
     private ShannonNettyClient nettyClient;
     /**失败计数器：未收到客户端发送的ping请求*/
@@ -48,9 +49,13 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<St
     /**定义客户端没有收到服务端的pong消息的最大次数*/
     private static final int MAX_UN_REC_PING_TIMES = 3;
 
-    private static final SocketMsg<String> PING =new SocketMsg<String>().setGatewayId("1").setType(MsgType.PING_VALUE).setContent("ping");
+    public ClientHeartHandler(){
+        this.gatewayId = String.valueOf(Math.random());
+    }
 
-    private static final SocketMsg<String> PONG =new SocketMsg<String>().setGatewayId("1").setType(MsgType.PONG_VALUE).setContent("pong");
+    private  final SocketMsg<String> PING =new SocketMsg<String>().setGatewayId(this.gatewayId).setType(MsgType.PING_VALUE).setContent("ping");
+
+    private  final SocketMsg<String> PONG =new SocketMsg<String>().setGatewayId(this.gatewayId).setType(MsgType.PONG_VALUE).setContent("pong");
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
@@ -114,6 +119,7 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<St
                 break;
             case MsgType.LOGIN_SUCCESS_VALUE:
                 log.info("8. 网关登陆成功，后续数据将使用AES进行加解密");
+                Gateway gw = new Gateway();
                 //用AES加解密替换掉默认的编解码器
                 ctx.pipeline().replace(ctx.pipeline().get("decoder"),"decoder",new JsonDecoderAES());
                 ctx.pipeline().replace(ctx.pipeline().get("encoder"),"encoder",new JsonEncoderAES());
@@ -122,12 +128,12 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<St
                 for (int i=0;i<5;i++){
                     String data = "测试加密数据";
                     SocketMsg<String> sendData = new SocketMsg<String>()
-                            .setGatewayId("1")
+                            .setGatewayId(this.gatewayId)
                             .setType(MsgType.UPLOAD_DATA_VALUE)
                             .setContent(data)
                             .setSign(EncryptOrDecryptUtil.sign(data,ecKeys.getPriKey()));
                     ctx.writeAndFlush(sendData);
-                    TimeUnit.SECONDS.sleep(2);
+                    TimeUnit.SECONDS.sleep(1);
                 }
 
                 break;
@@ -145,11 +151,12 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<St
     private SocketMsg<String> clientInit(){
         long start = System.currentTimeMillis();
         ecKeys = EncryptOrDecryptUtil.getEcKeys();
+        log.info("网关id为【{}】",this.gatewayId);
         log.info("客户端初始化公钥cliPubKey【{}】",ecKeys.getPubKey());
         log.info("客户端初始化私钥cliPriKey【{}】",ecKeys.getPriKey());
         log.info("客户端秘钥生成耗时：{}",System.currentTimeMillis()-start);
         log.info("1.客户端发起秘钥协商请求");
-        return new SocketMsg<String>().setGatewayId("1").setType(MsgType.AUTH_VALUE).setContent(ecKeys.getPubKey());
+        return new SocketMsg<String>().setGatewayId(this.gatewayId).setType(MsgType.AUTH_VALUE).setContent(ecKeys.getPubKey());
     }
 
     private void clientEcdh(ChannelHandlerContext ctx){
@@ -157,17 +164,17 @@ public class ClientHeartHandler extends SimpleChannelInboundHandler<SocketMsg<St
         log.info("4.客户端开始秘钥协商，收到服务端公钥为:{}",ServerPubKey);
         key = EncryptOrDecryptUtil.ecdhKey(ecKeys.getPriKey(), ServerPubKey);
         Gateway gw = new Gateway()
-                .setGwId("1")
+                .setGwId(gatewayId)
                 .setKey(key)
                 .setChannel(ctx.channel());
-        NettySocketHolder.put("1",gw);
+        NettySocketHolder.put(this.gatewayId,gw);
         log.info("5. 客户端秘钥协商完成，耗时：{}ms，开始验证秘钥正确性,加密秘钥为:{}",System.currentTimeMillis()-start,key);
     }
 
     private SocketMsg<String> createLogin(){
         String content = EncryptOrDecryptUtil.doAES("login",key, Cipher.ENCRYPT_MODE);
         return new SocketMsg<String>()
-                .setGatewayId("1").setType(MsgType.AUTH_CHECK_VALUE).setContent(content);
+                .setGatewayId(this.gatewayId).setType(MsgType.AUTH_CHECK_VALUE).setContent(content);
     }
 
     private void reConnect(ChannelHandlerContext ctx){
