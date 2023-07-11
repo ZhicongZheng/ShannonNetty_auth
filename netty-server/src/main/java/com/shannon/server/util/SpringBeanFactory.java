@@ -1,4 +1,4 @@
-package com.shannon.client.util;
+package com.shannon.server.util;
 
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;

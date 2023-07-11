@@ -12,6 +12,21 @@ buildNumber.properties
 # Compiled class files
 *.class
 
+/out
+/classes
+/checkouts
+/.lein-*
+/.env
+.idea
+.svn
+.project
+.settings
+.classpath
+logs
+/log
+/tmp
+hotspot.log
+
 # Log Files
 *.log
 

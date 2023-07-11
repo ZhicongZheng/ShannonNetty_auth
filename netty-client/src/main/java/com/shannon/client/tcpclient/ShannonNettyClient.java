@@ -1,6 +1,6 @@
 package com.shannon.client.tcpclient;
 
-import com.shannon.client.init.ShannonChannelInitializer;
+import com.shannon.client.initializer.ClientChannelInit;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -15,13 +15,17 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import io.netty.channel.socket.SocketChannel;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Netty客户端
+ * @author zzc
  */
 @Slf4j
-@Component
+@Component(value = "ShannonNettyClient")
 public class ShannonNettyClient {
     private EventLoopGroup group = new NioEventLoopGroup();
     @Value("${netty.server.port}")
@@ -29,20 +33,18 @@ public class ShannonNettyClient {
     @Value("${netty.server.host}")
     private String host;
 
-    private SocketChannel socketChannel;
-
     @PostConstruct
     public void start() throws InterruptedException {
         Bootstrap bootstrap = new Bootstrap();
         //NioSocketChannel用于创建客户端通道，而不是NioServerSocketChannel。
         bootstrap.group(group)
                 .channel(NioSocketChannel.class)
-                .handler(new ShannonChannelInitializer())
+                .handler(new ClientChannelInit())
                 .remoteAddress(host,nettyPort)
                 .option(ChannelOption.SO_KEEPALIVE, true)
                 .option(ChannelOption.TCP_NODELAY, true);
 
-        ChannelFuture future = bootstrap.connect().sync();
+        ChannelFuture future = bootstrap.connect();
         if (future.isSuccess()) {
             log.info("启动 Netty客户端 成功");
         }
@@ -59,11 +61,8 @@ public class ShannonNettyClient {
                         e.printStackTrace();
                         log.info("连接Netty服务端异常："+e.getMessage());
                     }
-                }, 20, TimeUnit.SECONDS);
+                }, 30, TimeUnit.SECONDS);
             }
         });
-
-        socketChannel = (SocketChannel) future.channel();
     }
-
 }
